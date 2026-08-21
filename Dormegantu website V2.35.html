@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DnD World Setting Masterpiece</title>
+    <style>
+        /* Global Fantasy Aesthetic Theme Setup */
+        body { font-family: 'Georgia', 'Times New Roman', serif; background: #1c1c1c; color: #fff; margin: 0; padding: 0; }
+        
+        /* 🗺️ Main Navigation Bar Rules */
+    .navbar { display: flex; justify-content: center; background: #111; border-bottom: 3px solid #b38f4f; padding: 15px; position: sticky; top: 0; z-index: 1000; }
+    .nav-btn { background: #2a2a2a; border: 1px solid #b38f4f; color: #b38f4f; padding: 12px 24px; margin: 0 10px; font-weight: bold; cursor: pointer; border-radius: 4px; font-size: 16px; transition: all 0.3s ease; }
+    .nav-btn:hover { background: #b38f4f; color: #111; box-shadow: 0 0 10px #b38f4f; }
+    .nav-btn.active { background: #b38f4f; color: #111; font-weight: 900; }
+
+        /* 📦 Core Content Engine Framework */
+        .content-container { padding: 30px; max-width: 1200px; margin: 0 auto; }
+        .page-view { display: none; background: #252525; padding: 25px; border-radius: 8px; border: 1px solid #333; min-height: 400px; }
+        .page-view.active-view { display: block; }
+        
+        /* 🛡️ Character Creator Column Layout Module */
+        .wizard-container { display: flex; gap: 20px; margin-top: 15px; }
+        .options-column { flex: 1; background: #111; border: 2px solid #b38f4f; padding: 20px; border-radius: 8px; }
+        .preview-column { flex: 1; background: #1e1e1e; border: 2px dashed #b38f4f; padding: 20px; border-radius: 8px; }
+        .hidden { display: none; }
+        .list-container { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+	@media (max-width: 768px) {
+  .wizard-container { flex-direction: column; }
+}
+        
+        /* Interactive Option Selectors */
+        .opt-btn { 
+            background: #3a3a3a; 
+            border: 1px solid #555; 
+            color: white; 
+            padding: 12px; 
+            text-align: left; 
+            cursor: pointer; 
+            border-radius: 4px; 
+            font-size: 15px; 
+        }
+        .opt-btn:hover { 
+            background: #4a4a4a; 
+            border-color: #b38f4f; 
+        }
+        .opt-btn.active { 
+            background: #b38f4f; 
+            color: black; 
+            font-weight: bold; 
+            border-color: #fff; 
+        }
+        
+        .opt-btn * { 
+            pointer-events: none; 
+        }
+        
+        /* UI Control Navigation Buttons */
+        .action-btn { background: #b38f4f; border: none; color: #111; padding: 12px 20px; margin-top: 15px; cursor: pointer; font-weight: bold; border-radius: 4px; font-size: 14px; }
+        .action-btn:hover { background: #d4af37; }
+        .back-btn { background: #555; color: #fff; margin-right: 10px; }
+        .back-btn:hover { background: #777; }
+        .summary-box { background: #111; padding: 20px; border-left: 4px solid #b38f4f; border-radius: 4px; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 5px; }
+
+/* Style the hoverable text */
+.spell-tooltip {
+  color: #a52a2a;
+  border-bottom: 1px dashed #a52a2a;
+  cursor: help;
+}
+
+.spell-box {
+  position: absolute;
+  z-index: 2000; /* Increased to stay above sticky navigation bars */
+  width: 320px; /* Widened slightly to accommodate deep Rokugan blocks */
+  max-height: 380px; /* Safety cap so it never stretches taller than the screen */
+  overflow-y: auto; /* Adds a clean, integrated scrollbar if text overflows */
+  background-color: #2e261f; 
+  color: #f4ebd0; 
+  padding: 14px;
+  border: 2px solid #b89244; 
+  border-radius: 4px;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.6);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  pointer-events: none; 
+  display: none; 
+}
+
+/* Custom visual styling for the internal scrollbar to maintain the fantasy theme */
+.spell-box::-webkit-scrollbar {
+  width: 5px;
+}
+.spell-box::-webkit-scrollbar-thumb {
+  background: #b89244;
+  border-radius: 3px;
+}
+
+/* Class to show the tooltip via JavaScript */
+.spell-box.visible {
+  display: block;
+}
+    </style>
+</head>
+<body>
+
+    <!-- 🗺️ MASTER INTERACTABLE MENU TOP HEADER -->
+    <div class="navbar">
+        <button class="nav-btn active" id="btn-creator" onclick="switchTab('creator')">Character Creator</button>
+        <button class="nav-btn" id="btn-alchemy" onclick="switchTab('alchemy')">Alchemy</button>
+        <button class="nav-btn" id="btn-forging" onclick="switchTab('forging')">Forging</button>
+    </div>
+
+    <!-- 📦 PRIMARY APP CORE VIEWS CONTROLLER -->
+   <!-- LEFT SIDE: INPUT & STEP OPTIONS -->
+<div class="options-column">
+    
+    <!-- STEP 0: NATION SELECTION (NEW) -->
+    <div id="step-nation">
+        <h2>Step 1: Choose Your Nation</h2>
+        <div id="nation-list" class="list-container"></div>
+        <button id="next-nation-btn" class="action-btn hidden" onclick="confirmNation()">Confirm Nation ➡</button>
+    </div>
+
+    <!-- STEP 1: RACE -->
+    <div id="step-race" class="hidden">
+        <h2>Step 2: Select a Race</h2>
+        <div id="race-list" class="list-container"></div>
+        <button class="action-btn back-btn" onclick="goBack('nation')">⬅ Back</button>
+        <button id="next-race-btn" class="action-btn hidden" onclick="confirmRace()">Confirm Race ➡</button>
+    </div>
+
+    <!-- STEP 2: SUBRACE -->
+    <div id="step-subrace" class="hidden">
+        <h2>Step 3: Select a Subrace</h2>
+        <div id="subrace-list" class="list-container"></div>
+        <button class="action-btn back-btn" onclick="goBack('race')">⬅ Back</button>
+        <button id="next-subrace-btn" class="action-btn hidden" onclick="confirmSubrace()">Confirm Subrace ➡</button>
+    </div>
+
+    <!-- STEP 3: CLASS -->
+    <div id="step-class" class="hidden">
+        <h2>Step 4: Select a Class</h2>
+        <div id="class-list" class="list-container"></div>
+        <button class="action-btn back-btn" onclick="goBack('subrace')">⬅ Back</button>
+        <button id="next-class-btn" class="action-btn hidden" onclick="confirmClass()">Finish Character ✨</button>
+    </div>
+
+    <!-- STEP 4: SUMMARY -->
+    <div id="step-summary" class="hidden">
+        <h2>Character Complete!</h2>
+        <div id="character-summary" class="summary-box"></div>
+        <button class="action-btn" onclick="restartWizard()">Create Another Character</button>
+    </div>
+
+</div>
+
+<!-- RIGHT SIDE: LIVE LORE/INFO PREVIEW PANEL -->
+<div id="preview-panel" class="preview-column">
+    <h3 id="preview-title">Inspect an Option</h3>
+    <p id="preview-blurb" style="font-style: italic; color: #aaa;">Click any option on the left to read its lore, racial traits, or class abilities before making your final selection.</p>
+    <div id="preview-features"></div>
+</div>
+
+        <!-- 🧪 APP VIEW 2: ALCHEMY SYSTEM placeholder container link mapping -->
+        <div id="view-alchemy" class="page-view">
+            <h2>🧪 Alchemy Lab</h2>
+            <p>Welcome to the Alchemical Station. This module is primed to handle your customized alchemy minigame engine processing formulas directly tied to your Google Sheets parameters database values.</p>
+        </div>
+
+        <!-- 🔨 APP VIEW 3: FORGING SYSTEM placeholder container link mapping -->
+        <div id="view-forging" class="page-view">
+            <h2>🔨 Arcane Forging Station</h2>
+            <p>Welcome to the Grand Anvil. This structural engine system module processes weapon crafting templates arrays blueprints modifications schemas values matrix rules.</p>
+        </div>
+
+    </div>
+
+    <script>
+        // 🛠️ 1. PRIMARY APPLICATION MAIN NAVIGATION ROUTER ENGINE
+        function switchTab(targetTabId) {
+            // Remove active status highlights across all navbar tabs buttons lists
+            document.getElementById("btn-creator").classList.remove("active");
+            document.getElementById("btn-alchemy").classList.remove("active");
+            document.getElementById("btn-forging").classList.remove("active");
+            
+            // Hide all views elements from layout completely
+            document.getElementById("view-creator").classList.remove("active-view");
+            document.getElementById("view-alchemy").classList.remove("active-view");
+            document.getElementById("view-forging").classList.remove("active-view");
+            
+            // Activate current matching selections items values pairs parameters elements targets references
+            document.getElementById(`btn-${targetTabId}`).classList.add("active");
+            document.getElementById(`view-${targetTabId}`).classList.add("active-view");
+        }
+
+        // 🛡️ 2. DATABASE SYSTEM MODULE TREE OBJECT REFERENCE ENTRIES
+        const homebrewData = {
+    races: {
+        "Aarakocra": {
+            nation: "Beast Commune",
+            source: "Mordenkainen Presents: Monsters of the Multiverse",
+            blurb: "Avian humanoids that soar through the skies, native to the rugged terrain of the Beast Commune.",
+            offers: ["+2 Dexterity, +1 Wisdom", 
+		     "Type: Humanoid", 
+		     "Size: Medium.", 
+		     "Speed: 30 feet.", 
+		     "Flight: 50 feet. To use this speed, you can't be wearing medium or heavy armor.", 
+		     "Talons: 1d4 Slashing damage + <i>Strength</i> modifier", 
+		     "Wind caller: Starting at 3rd level, you can cast the <span class='spell-tooltip' data-spell='gust-of-wind'>Gust of wind</span> spell with this trait, without requiring a material component. Once you cast the spell with this trait you can't do so again until you finish a long rest. You can also cast the spell using any spell slots you have of 2nd level or higher. <i>Intelligence</i>, <i>Wisdom</i>, or <i>Charisma</i> is your spell casting ability for the spell (choose when you select his race).", 
+		     "Languages: You can speak, read, and write Common, Aven, and Auran."],
+            subraces: {} 
+        },
+        "Aasimar": {
+            nation: "Human Union",
+            source: "Mordenkainen Presents: Monsters of the Multiverse",
+            blurb: "Mortals carrying a spark of the Upper Planes within their souls, often manifesting as champions of light.",
+            offers: ["+2 Charisma", 
+		     "Type: Humanoid.", 
+		     "Size: Medium or small.", 
+		     "Speed: 30 feet.", 
+		     "Darkvision: 60 feet.", 
+		     "Celestial Resistance: Resistance to necrotic damage and radiant damage.", 
+		     "Healing Hands: As an action, you can touch a creature and roll a number of d4s equal to your proficiency bonus. The creature regains a number of hit points equal to the total rolled. Once you use this trait, you can't use it again until you finish a long rest.", "Light Bearer: You know the <span class='spell-tooltip' data-spell='light'>Light</span>. <i>Charisma</i> is your spellcasting ability for it.", 
+		     "Languages: You can speak, read, and write Common and Celestial."],
+            subraces: {
+                "Fallen": {
+                    source: "Mordenkainen Presents: Monsters of the Multiverse",
+                    blurb: "An aasimar that has been touched by dark forces or left the path of righteousness becomes a fallen aasimar, their inner light replaced by shadow.",
+                    offers: ["+1 Strength.", 
+			     "Necrotic Shroud: Starting at 3rd level, you can use your action to unleash the divine energy within yourself, causing your eyes to turn into pools of darkness and two skeletal, ghostly, flightless wings to sprout from your back. The instant you transform, other creatures within 10 feet of you that can see you must each succeed on a <i>Charisma</i> saving throw (DC 8 + your proficiency bonus  + your <i>Charisma</i> modifier) or become frightened of you until the end of your next turn.<br>Your transformation lasts for 1 minute or until you end it as a bonus action. During it, once on each of your turn, you can deal extra necrotic damage to one target when you deal damage to it with an attack or a spell. The extra necrotic damage equals your level.<br>Once you use this trait, you can't use it again until you finish a long rest."]
+                },
+                "Protector": {
+                    source: "Mordenkainen Presents: Monsters of the Multiverse",
+                    blurb: "Protector aasimar are charged by the powers of good to guard the weak, to strike at evil wherever it arises, and to stand vigilant against the darkness.",
+                    offers: ["+1 Wisdom.", 
+			     "Radiant Soul: Starting at 3rd level, you can use your action to unleash the divine energy within yourself, causing your eyes to glimmer and two luminous, incorporeal wings to sprout from your back.<br>Your transformation lasts for 1 minute or until you end it as a bonus action. During it, you have a flying speed of 30 feet, and once on each of your turns, you can deal extra radiant damage to one target when you deal damage to it with an attack or a spell. The extra radiant damage equals your level.<br>Once you use this trait, you can't use it again until you finish a long rest."]
+                },
+                "Scourge": {
+                    source: "Mordenkainen Presents: Monsters of the Multiverse",
+                    blurb: "Scourge aasimar are imbued with a divine energy that blazes intensely within them. It feeds a powerful desire to destroy evil—a desire that is, at its best, unflinching.",
+                    offers: ["+1 Constitution", 
+			     "Radiant Consumption: Starting at 3rd level, you can use your action to unleash the divine energy within yourself, causing a searing light to radiate from you, pour out of your eyes and mouth, and threaten to char you.<br>Your transformation lasts for 1 minute or until you end it as a bonus action. During it, you shed bright light in a 10 foot radius and dim light for an additional 10 feet, and at the end of each of your turns, you and each creature within 10 feet of you take radiant damage equal to half your level (rounded up). In addition, once on each of your turns, you can deal extra radiant damage to one target when you deal damage to it with an attack or a spell. The extra radiant Damage equals your level.<br>Once you use this trait, you can't use it again until you finish a long rest."]
+                },
+                "Variant": {
+                    source: "Dungeon Master's Guide",
+                    blurb: "A variant aasimar found in the Dungeon Master's Guide with alternative legacy spellcasting options.",
+                    offers: ["+1 Wisdom", 
+			     "Celestial Legacy: You know the <span class='spell-tooltip' data-spell='light'>Light</span> cantrip. Once you reach 3rd level, you can cast the <span class='spell-tooltip' data-spell='lesser-restoration'>Lesser Restoration</span> spell once with this trait, and you regain the ability to do so when you finish a long rest. Once you reach 5th level, you can cast the <span class='spell-tooltip' data-spell='daylight'>Daylight</span> spell once with this trait as a 3rd level spell, and you regain the ability to do so when you finish a long rest. <i>Charisma</i> is your spellcasting ability for these spells."]
+                }
+            }
+        },
+        "Aberrant": {
+            nation: "Aberrant Empire",
+            source: "Corpus Malicious PDF",
+            blurb: "You are one of the most bizarre creatures to walk the land. You look like a humanoid but you have aberration blood running through your beins..",
+            offers: ["+1 Intelligence, -1 Wisdom", 
+		     "Type: Aberration.", 
+		     "Darkvision: 60 feet.", 
+		     "Size: You are the same size as your race.", 
+		     "Speed: You are the same speed as your race.", 
+		     "Aberrant Lucidity: The aberration blood in your veins grants you a lucidity about whichever environment you are in, both socially and physically. You gain advantage on your <i>Wisdom</I> (Insight) checks and your <i>Wisdom</i> (Perception) rolls.", 
+		     "Madness will not die: If you die, your soul leaves your body, but your blood does not. When your consciousness abandons you, the aberration within you takes over. It can use your character to do anything it wants until your soul is brought back by spells like revivify, resurrection, wish or true resurrection. The motives of the aberration are at the GM's discretion and is only known by the GM.", 
+		     "Shattered Mind: The whispers you hear and the maddening dreams you see distort your mind, your thoughts and your ability to focus. You are immune to being frightened, but you have disadvantage on ability checks to remember names, historic information, etc.", 
+		     "Submitting to madness: You can choose to bring forth the madness within you. The sentient blood of yours takes control, twists your physical appearance and grants you new powers. When you choose to unleash the madness within, your appearance changes and you look more similar to an aberration. For example, dark purple or pale green veins become visible on your skin, which may also turn a cloudier color, you may develop a foul stench. You can talk to your GM to determine in what way your appearance becomes more aberrant.<br>Your submission to madness lasts for 1 minute. Since this is a very painful process for your mortal body, although you gain unique powers during the submission, you also suffer 2 levels of exhaustion at the end of the duration. When you set the aberration within you free, you gain the following benefits.<br>Because of your aberrant appearance, you have disadvantage on your <i>Charisma</i> (Deception) and <i>Charisma</i> (Persuausion) checks and gain advantage on your <i>Charisma</i> (Intimidation) checks.<br>You gain the ability to breath underwater.<br>You start to talk and understand Deep Speech and you cannot talk in a language other than Deep Speech even if you do not know it normally. This does not affect your spellcasting, meaning that you can still cast spells that have a verbal component.<br>You can cas the crown of tyranny spell once. The DC of the spell equals 8 + your proficiency bonus + your <i>Intelligence</i> modifier.'<br>'You can use your action to summon an ooze like aberration that is connected to your body. It is a reflection of the sentient blood within you, an Aberrant visage (p.232). As you grow in power, it becomes more powerful as well. You can call forth an aberrant visage of CR 1/4 at 1st level, of CR 1 at 5th level, CR 2 at 9th level, of CR 3 at 13th level and of CR 4 at 17th level. You can use your bonus action to dismiss the aberration, or it is dismissed automatically when the duration of your Submitting to Madness ends or its hit points drop to 0."],
+            subraces: {} 
+        }, // 🌟 Closed aberrant Race
+        "Adrumolari": {
+            nation: "Beast Commune", 
+            source: "Bespoke Bestiary",
+            blurb: "A typical Adrumolari appears as a humanoid version of something like a cross between a mole and an armadill. The fact these proud people frequently keep both as pets and guard animals does nothing to dispel the appearance. Standing five to six feet tall, armored with a flexible ridged shell and thick claws even a peaceful Adrumolari appears ready for combat.",
+            offers: ["+2 constitution", "Type: Humanoid", "Size: Medium", "Speed: 20 feet", "Darkvision: 120 feet", "Elemental Nature: You count as both a humanoid and an elemental for the purpose of spells and abilities.", "Armored Shell: You have an armored shell. While not wearing armor, your armor class is 13 + your Dexterity modifier.", "Claws: You have naturally sharp claws, which you can use to make unarmed strikes. If you hit with them, you deal slashing damage equal to 1d6 + your Strength modifier.", "Sunlight Sensitivity: While in sunlight, you have disadvantage on attack rolls, as well as Peception checks that rely on sight.", "Languages: You can speak, read, and write common, and terran."],
+            subraces: {
+                "Armored One": {
+                    source: "Bespoke Bestiary",
+                    blurb: "The armored ones are raised from birth to leverage their claws and shell in concert with armor and weaponry.",
+                    offers: ["+1 Strength", "Adrumolori Weapon Training: You have proficiency with flails, mauls, pikes, and war picks", "Powerful Build: You count as one size larger when determining your carrying capacity and the wieght you can push, drag, or lift.", "Savage attack: When you score a critical hit with a melee weapon attack, you can roll one of the weapon's damage dice one additional time and add it to the extra damage of the critical hit."]
+                }, // 🌟 Closed Armored one
+		"Dredge Priest": {
+                    source: "Bespoke Bestiary",
+                    blurb: "Dredge priests are those adrumolari blessed by passing earth elementals with a natural affinity toward earthen magics.",
+                    offers: ["+1 Wisdom", "Blessing of the Great Crystal: You know the <span class='spell-tooltip' data-spell='acid-splash'>Acid Splash</span> cantrip. When you reach 3rd level, you can cast the <span class='spell-tooltip' data-spell='magic-missile'>Magic Missile</span> spell as a 2nd level spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the <span class='spell-tooltip' data-spell='hold-person'>Hold Person</span> spell once with this trait and regain the ability to do so when you finish a long rest. <i>Wisdom</i> is your spellcasting ability for these spells.", "Earthen Gift: As an action, you can touch a creature and cause it to regain a number of hit points equal to your level. Once you use this trait, you must complete a long rest before using it again."]
+                } // 🌟 Closed Dredge Priest
+            } // 🌟 Closed Adrumolori subraces list
+        }, // 🌟 Closed Race
+	"Animal Yokai": {
+            nation: "Beast Commune", 
+            source: "Adventures in Rokugan",
+            blurb: "Write your custom lore blurb description text right here inside these quotation marks.",
+            offers: ["+2 to any one ability score, +1 to any other ability score", "Type: Fey", "Size: Your size varies based on the form you take. See True Form.", "Speed: 30 feet", "Innate Shapeshifting: you have two forms: your mortal form and your yokai fomr. After you complete a short rest, you can switch between these forms. Your mortal form appears to be human (or with the GM's permission, another species of your choice) in all anatomical ways, save for the occasional tail poking out from a robe that quickly vanishes when inspected more closely. In mortal form, your size is that of the species you chose.<br>Your yokai form is determined by your lineage: choose bat, fox, or otter, below. When you transform into your yokai form, you can choose for any or all of your items to be safely stored within senkyo, returning to you when you change back into your mortal form.", "Language: see backgrounds on page (124)."],
+            subraces: {
+                "Fox": {
+                    source: "Adventures in Rokugan",
+                    blurb: "Kitsune are fox spirits natural born tricksters. Some like to travel and enojoy, aiding or deceiving mortals as their particular personality and beliefs dictate or even take up permanent residence there, for mortal company can be a pleasant change from the rivalries of courts of chikushudo and sakkaku.<br>Thes kitsune sometimes marry or fall in love with mortals, and some descendants of such unions favor their spiritual heritage, possessing their fox ancestors' abilities. Potentially revealing of a kitsune's guise are their tails, which sometimes reappear even when the kitsune takes human form. Kitsune gain additional tails throughout their lives, and the oldest and most powerful. kitsune have nine tails.",
+                    offers: ["Illusory tricks: You can cast <span class='spell-tooltip' data-spell='token-of-memory'>Token of Memory</span> once without expending a spell slot. When you cast it using this trait while in your true form, the spell is treated as if it were cast using a spell slot with a level equal to your Proficiency Bonus.Additionally, if you are in an area of high environmental resonance, the effective spell slot level increases based on the severity of the resonance (detailed in the Token of Memory resonance section).Once you cast this spell using this trait, you cannot do so again until you finish a long rest, or until you spend at least 1 uninterrupted hour within the Feywild (or a highly spiritual echo plane).", "True form: Your true form is a fox spirit. Each time you transform into your true form, you become a beast that is small or medium (your choice). Your walking speed becomes 35 feet. You have advantage on <i>Wisdom</i> (Perception) checks that rely on hearing or smell. You cannot wield weapons in this form, and you get access to a bite action that deals 1d4 piercing damage."]
+                }, // 🌟 Closed fox subrace,
+ 		"Otter": {
+    "source": "Adventures in Rokugan",
+    "blurb": "On occasion, when approaching a stream or pond, an exceptionally attractive rafter may offer to ford a traveler across the waters. Upon reaching the maximum depth, both raft and ferry person inevitably vanish, leaving one soaked, tinny laughter echoing off the trees. This is but one of the tricks the kawauso are said to play: shapeshifting otters that are fascinated by human beings and seemingly live to test the limits of their patience.",
+    "offers": [
+        "True Form: Your true form is an otter spirit. Each time you transform into your true form, you become a beast that is small or medium (your choice). Your walking speed becomes 20 feet, and you gain a swimming speed of 30 feet. While swimming, you do not provoke opportunity attacks when you move out of an enemy's reach. You cannot wield weapons in this form, and you gain a bite action that deals 1d4 piercing damage.", 
+        "Watery Wayfarer: You can perform the <span class=\"spell-tooltip\" data-spell=\"dominion-of-water\">Dominion of Water</span> spell once without expending a spell slot. When you cast it using this trait while in your true form, the spell is treated as if it were cast using a spell slot with a level equal to your Proficiency Bonus. Additionally, if you are in an area of high environmental resonance, the effective spell slot level increases based on the severity of the resonance (detailed in the Dominion of Water resonance section). Once you cast this spell using this trait, you cannot do so again until you finish a long rest, or spend at least 1 hour swimming in the ocean."
+    ]
+		} // 🌟 Closed Otter
+            } // 🌟 Closed animal yokai subraces list
+        }, // 🌟 Closed animal yokai race
+	"Ankylier": {
+            nation: "Gilded Scales", 
+            source: "Dr Dhrolin’s Dictionary of Dinosaurs",
+            blurb: "The Ankylier are a race of heavily armoured, herbivorous humanoids. They have a large and broad appearance, with thick, bony osteoderms covering their back, flanks, limbs, and head which are, in turn, covered in tough scutes. They are so heavily armoured that even their eyelids are reinforced. Their skin is thick, scaly, and gives them a leathery appearance. Ankylier have low brows, large, muscular limbs bulging stomachs, and a thick tail that ends in a heaby, bony club Ankylier familial bonds are strong. Pairs mate for life and eggs are laid individually several years apart, with offspring cared for up until maturity before the next egg is laid. Eggss are usually carried and threaded wire baskets lined with dried plants to create a portable nest. Hatchlings and young children form close attachments with their parents, usually following in their footsteps, figuratively and literally. Children are incorporated into ankylier society as fast as possible, working as apprentices as soonsas they are able. Some other races see this attitude as akin to child labour, but the Ankylier value the safety and contribution of their children very much. While parents offer harsh criticism, they also provide great praise when deserved.",
+            offers: ["+3 Constitution or +2 Constitution and +1 Strength", "Type: You are a humanoid. You are also considered a dinosaur for any prerequisite or effect that requires you to be a dinosaur.", "Size: Medium.", "Speed: 25 feet.", "Musclebound: You count as a large creature for determining your carrying weight you can maneuver.", "Clubbed tail: When you attack, you may replace any of your attacks with a tail attack. This is a melee weapon attack that you are proficient with and uses your <i>Strenght</i> modifier bludgeoning damage. From level 10 onwards, you can add your proficiency bonus to the damage.", "Metalworker: You have proficiency with smith's tools and medium armour. You can create a single shield, simple weapon, or medium armour over the course of a long rest, provided you have access to materials and a forge. If you use this time to create an item in this manner, you only gain the benefits of a short rest.", "Osteoderms: you have thick, bony osteoderms in your skin. You gain +3 to your AC, but cannot add your <i>Dexterity</i> modifier to your AC. Alternatively, you may have an unarmoured AC of 17, but cannot add your <i>Dexterity</i> modifier to your AC (we suggest agreeing which of thes you use with your DM.).", "Languages: You know Common, Draconic, and another language of your choice in addition to any other languages you know."],
+            subraces: {}
+        }, // 🌟 Close Ankylier race
+	"Anseri": {
+            nation: "Beast Commune", 
+            source: "Historia",
+            blurb: "They are not graceful or majestic, but they will not allow themselves to be easily subdued, responding to any offense or aggression suffered with twice the strength. The Anseri do not actively look for danger, but despite not being the most feared or respected avians, they will always react with ardor to tense situations. Their webbed legs do not allow them to grasp objects or wield weapons, but they prove decisive in water, where the Anseri are more comfortable than on dry land.",
+            offers: ["+1 Constitution", "Type: Humanoid.", "Size: Medium.", "Speed: Your base speed is 15, your flying speed is 30, and your swimming speed is 35.", "Clumsy: You have disadvantage on Stealth (<i>Dexterity</i>) checks to move silently on dry land.", " Orientation: You always know which direction is North.", "Fiery Spirit: If you are hit by an opponent, you can use your reaction to gain advantage on attack rolls against that opponent until the end of their next turn.", "Wings: You can use your wings for simple interactions with objects but cannot handle or hold them. Flying with wings requires concentration and you fall if you use them in any other way. If you perform the Dash action while in flight, your flying speed is doubled for the turn.", "Pecking: You may use your beak to make unarmed attacks, dealing piercing damage instead of bludgeoning damage.", "Prehensile legs. You have developed prehensile hind legs that you can use to grasp objects in a simple way; that is, you can handle them, but are not treated as being proficient with any weapon, tool, or action, that would require the use of two legs simultaneously. An avian needs at least one free leg to be able to stand still on the ground or hang from something.", "Webbed leg: You cannot use your legs to grasp objects, but rather use your beak on your long, articulated neck or your wings. On any turn that you take the Dash action while swimming, you may double your movement.", "Instinct of Familia, Migrator (Prey): I am looking for the best environment for me, I shy away from hostile environments."],
+            subraces: {
+                "Ducks": {
+                    source: "Historia",
+                    blurb: "Ducks, like many Anseri, know well that they do not have an intimidating presence. For some of them who dream of having the proud profile of an Eagle, and above all their cruel talons, being born Ducks is a great disappointment. For others, however, it is an opportunity: Ducks are intelligent, resourceful, courageous (in their own way) and lovers of novelties. Hardly out of the place in urban or rural environments, they find wild areas and especially the high mountains particularly hostile. However, they do not shy away from challenges, and tend to be very self confident. Chatty and sociable, Ducks are excellent orators, and they express their passions for speech in very different ways. Some end up being so in love with the sound of their voice that they become vainglorious and self centered while others cultivate this inclination by pursuing careers in diplomacy, theater, storytelling, tutoring, or even auctioneering.",
+                    offers: ["+2 Intelligence.", "Size: Small.", "Imprinting: Choose any one skill. You gain proficiency with that skill (linked to a childhood memory).", "Resolute: Once a day, you may re-roll a saving throw and keep the second result.", "Instinct of Species, Candid: I say what I think frankly."],
+                },
+		"Geese": {
+                    source: "Historia",
+                    blurb: "Many underestimate the Geese for their less martial aspect, but one should be very careful not to make such an error. These Anseri are fearless, aggressive and determined, animated by unshakable, loyal, chivalrous ideals and capable of putting far more dangerous creatures in their place. The regular Avian army is chock full of geese perfectly trained and made even more fearful by their innate ability to work with great coordination when gathered in groups of individuals who share the same goal and moral code. A military career is the obvious choice for many Geese, but those who choose a different profession often undertake one that allows them to write a lot. Despite not being extraordinarily imaginative (there are very few Geese novelists), these meticulous and careful creatures are considered excellent scribes and very reliable secretaries. These Anseri do not fear responsibility and are loyal to their duty, often serving their lord well into old age.",
+                    offers: ["+2 Strength.", "Size: Small.", "Calligrapher: You have expertise with calligrapher's tools.", "Courage: You have advantage when making saving throws against fear effects", "Instinct of Species, Loyal: I always keep my word."],
+                },
+		"Pelicans": {
+                    source: "Historia",
+                    blurb: "Pelicans know they are strong, and do not hesitate to put this force to the service of the weakest. They have a great spirit of sacrifice; they do not fear the judgment of others and are willing to do the right thing even when it could bring them harm. Their altruistic and fearless temperament makes them the backbone of any rescue or protection service of the community: Pelicans are born protectors, and they will fight with merit, without ever exceeding in zeal or violence. However, these brave avians do not always have a good relationship with regulations, especially with those that they perceive as being unfair, and have the tendency to do as they please if put in front of rigid and, in their eyes, unreasonable laws. These anseri are also skilled sailors and have an innate harmony with the weather, which they can read like no other, managing to evaluate with confidence whether they will face a storm or calm weather. Many captains are willing to pay substantial wages to secure a pelican boatswain, and success often smiles upon expeditions that sail with one of them on board.",
+                    offers: ["+2 Constitution", "Size: Small", "Sack Beak: You can carry up to a third of your weight and a third of your size in the pouch of your beak.", "Sailor: You always understand the evolution of the weather in maritime areas and have the ability to find the best currents and the best time to venture.", "Instinct of species, Defender: I defend anyone who is unable to defend themselves."],
+                },
+ 		"Swans": {
+                    source: "Historia",
+                    blurb: "Countless ballads immortalize the long neck, the scarlet beak and the white plumage (or sometimes blacker than a moonless night) that distinguish the Swans, and they, with great dignity, bask in this poetic aura without embarrassment. These Anseri are extremely vain and aware of the charm they exert on others. The most desired courtesans and the most elusive con artists are Swans, and although their tendency towards manipulation is well known, powerful nobles and common merchants alike continue to fall prey to their plots. Swans are social for the same reasons that Fox kin are, but unlike them they also have a constant need to be fondled, revered and confirmed in their being irresistible. Nothing scares a swan more than growing old (what a tragedy to lose the regal bearing that nature and youth had given them!) or seriously falling in love with someone: when a swan binds to a partner, they become very devoted, caring and faithful, often totally changing their life, even when it means abandoning ease and prestige.",
+                    offers: ["+2 Charisma", "Size: Small", "Beauty: If you would drop to or If you are reduced to 0 hit points but are not killed instantly, you may stay at 1 hit point. This ability can be used again after finishing a long rest.", "Instinct of species, Noble: I can fly higher than ordinary people."],
+                } // 🌟 Closed Swan subrace
+            } // 🌟 Closed Anseri subraces list
+       }, // 🌟 Closed Anseri race
+"Antec": {
+    nation: "Insectoid Horde", 
+    source: "Homebrew update",
+    blurb: "Antecs are outgoing and positive; they undertake adventures with open minds, but will remain subdued around people they do not trust.<br>Antecs have a chitinous exoskeleton, ranging from khaki to rust red. Their heads are heart-shaped with two large compound eyes and small mandibles. The Antec's abdomen has a small hump at the top of their back which contains most of their vital organs. Connected to their abdomen is a small round thorax. Arcane spellcasters receive yellow, purple, or blue markings on their back, Divine spellcasters receive white, gold, or the most favored color of their god, and primal spellcasters receive green, red, or deep blue markings. These markings are permanent and are similar to tribal tattoos. They possess the height of an average human, but weigh less.",
+    "offers": ["+2 Constitution, +1 Wisdom", "Type: Humanoid", "Size: Medium", "Speed: 30 feet.", "Skill proficiencies: Athletics and Survival.", "Nimble Feet: You can move through nonmagical difficult terrain without expending extra movement.", "Chitin Crafters: When using a weapon crafted with chitin you receive +1 to damage rolls, and when wearing chitin-based armor you receive a +1 to AC.", "Compound Eyes: Your large compound eyes allow you to perceive shifts in reality. You have advantage on saving throws and <i>Intelligence</i> (Investigation) checks made to discern illusions.", "Chitin Armor: Your chitinous exoskeleton gives you resistance to acid damage.", "Languages: You can speak, read, and write Common and Insectoid."
+    ],
+    "subraces": {}
+}, // 🌟 Closed Antec race
+"Ahooling": {
+    nation: "Aberrant Empire", 
+    source: "Underworld Races & Classes PDF",
+    blurb: "Ahoolings are not considerable in size, though they tend to be very lean and well-muscled. Each bears marks of what it may grow into as the ahooling ages, but the creatures are remarkably adaptive and their bodies evolve to suit their behaviors and environments. Still, they all bear some similar traits: long, piercing fangs that peek out from their mouths, bodies covered in fine, vestigial wings that jut out of their shoulders, taloned hands, and large ears that rise from their narrow skulls in short triangular folds of flesh. The irises of ahoolings are predominantly yellow—the eyes of nocturnal predators.<br>The core of their being demands a diehard approach to life from the ahool, and even their lesser cousins, the ahoolings, lead brutal, hardscrabble lives. They collect trophy fetishes, though only the strongest wear them openly; duels for assuming the spoils of victory from another are commonplace. Ahoolings treasure the drinking of blood; the more types of creatures one can legitimately claim to have drained heightens their social status. Thus the most respected of the beastmen are either fierce combatants or purveyors of their most valued cultural tradition: vino sanguinis (blood wine). While few in number, ahooling moss caverns (which are located on the floor of a cave rather than on the ceiling, unlike the ahool's moss gardens) are always ruled over by a native who has traveled the underworld and returned ascended, a full ahool. When found by their more bestial cousins, these conclaves are quickly subsumed, whittled down until only the toughest ahoolings remain. Their warriors are as much hunters as anything else, but the lesser beastmen show greater reverence for the arts and magic, allowing for their settlements to survive hidden from their stronger cousins.",
+    "offers": ["+2 Constitution, +1 Wisdom", "Type: Humanoid", "Size: Medium", "Speed: 25 feet.", "Ahooling wings: By flapping your vestigial wings, you can slow your descent to 60 feet per round. You do not take falling damage and land on your feet. If you are incapacitated, paralyzed, or petrified before reaching the ground, you begin falling normally. To use this ability, you cannot be wearing medium or heavy armor.", "Bite: You can use your bite as a simple melee weapon with which you have proficiency. Your bite has the finesse and light properties, a reach of 5 ft., and deals 1d6 points of piercing damage.", "Light Blindness: Abrupt exposure to bright light blinds you for 1 round.", "Minor Blood Thirst: Ahoolings must drink the blood of others to fuel their metabolism. Every week, you must consume one gallon of blood per hit die or suffer from level 1 exhaustion. For every additional day without feeding, you increase the exhaustion level by 1. This exhaustion cannot be removed by any means apart from consuming blood equal to one gallon per exhaustion level incurred. If an ahooling manages to drink one gallon of blood, they reduce their exhaustion level by 1. A medium-sized, healthy humanoid generally is assumed to have about 1-2 gallons of blood, though extraction of a whole gallon of blood is fatal to a single individual. Medium creatures drained of more than 0.5 gallons of blood suffer from 1 level of exhaustion. For the purpose of this ability, assume creatures to have twice as much blood per size category above medium, and half as much per size category below medium.", "Radiance Vulnerability: You are vulnerable to radiant damage due to your dark heritage.", "Sunlight Sensitivity: While in sunlight, you have disadvantage on attack rolls as well as on <i>Wisdom</i> (Perception) checks that rely on sight.", "Superior Darkvision: 120 ft.", "Underworld Resistances: You are accustomed to the harsh conditions of the underworld. You gain your choice of either cold or thunder resistance.", "Languages: You can speak, read, and write Infernal and Common, and generally can understand the basics of Draconic."],
+            subraces: {
+                "Aquatic Fledgling": {
+                    source: "Underworld Races & Classes PDF",
+                    blurb: "Ahoolings that bear the heritage of ahool spawned from the demons near aquatic realms develop differently than their airborne counterparts; they do not receive wings, but are well suited to water.",
+                    offers: ["Born Swimmer: You have proficiency in the Athletics skill and gain advantage on all <i>Strength</i> (Athletics) checks made to swim. When you reach 5th level, you gain a swim speed equal to your base speed.", "Change shape: At 3rd level, you can use <span class=\"spell-tooltip\" data-spell=\"polymorph\">Polymorph</span>, except you can only target yourself and you can only assume the form of a swarm of insects (Jellyfish in the case of most aquatic fledglings) for 1 hour. You must take a long rest to use this ability again.", "Gills: Aquatic Fledglings are at no risk of suffocation from being underwater, but can survive out of water only for 24 hours before they start to drown: You are immediately subject to the suffocation rules after this period. You require enough water to fully immerse yourself in it and spend at least 10 minutes inside the water to reset this time."]
+                },
+		"Terrestrial Fledgling": {
+                    source: "Underworld Races & Classes PDF",
+                    blurb: "Not every ahooling evolves to take to the air or the water; some scamper along the walls and squeeze into the minute cracks of the endless caves, living as rat kings of the underworld.",
+                    offers: ["Born Climber: You have proficiency in the Athletics skill and gain advantage on all <i>Strength</i> (Athletics) checks made to climb. Once you hit level 3, you gain a climb speed equal to your base speed.", "Change Shape: At 3rd level, you can use <span class=\"spell-tooltip\" data-spell=\"polymorph\">Polymorph</span>, except you can only target yourself and you can only assume the form of a swarm of eyes (type: aberration) for 1 hour. You must take a long rest to use this ability again", "Ground control (Recharge 5-6): At 5th level, you can use your action to touch the floor of any subterranean cave, unworked stone or rock to make it ripple at your command. The terrain in a 5 by 30 ft. line originating from you becomes difficult terrain. When you use ground control, all creatures in the area must succeed on a <i>Dexterity</i> saving throw or fall prone. The DC for this saving throw is equal to 8 + your proficiency bonus + your <i>Constitution</i> modifier."]
+                },
+		"Vampiric Fledgling": {
+                    source: "Underworld Races & Classes PDF",
+                    blurb: "The most feared (and common) type of ahooling is the vampiric fledgling; feared for their powerful predatory instincts and their propensity for blood.",
+                    offers: ["Blood Thirst: Vampiric fledglings must drink the blood of others to fuel their metabolism more so than other ahoolings. Once per long rest, you must consume one gallon of blood per hit die or suffer from 1 level of exhaustion. For every additional day without meeting the requirement, you increase the exhaustion level by 1. If an ahooling manages to drink one gallon of blood, they reduce their exhaustion level by 1. This exhaustion cannot be alleviated by any means apart from consuming blood equal to one gallon per exhaustion level incurred.", "Change Shape: At 3rd level, you can use <span class=\"spell-tooltip\" data-spell=\"polymorph\">Polymorph</span>, except you can only target yourself and you can only assume the form of a swarm of bats for 1 hour. You must take a long rest to use this ability again.", "Flight of the Vampire: At 5th level, your wings develop further. You have a flying speed of 35 feet.", "Vampiric Bite: As a reaction to hitting a living (non-construct, non-undead) creature with a bite attack, you may regain a number of hit points equal to 1d8 + your <i>Constitution</i> modifier hit points. This ability recharges on a short or long rest."]
+                }
+            }
+        }, // 🌟 Closed Alhooling race
+	"Alsied": {
+            nation: "Beast Commune", 
+            source: "Midgard Heroes PDF",
+            blurb: "Alseid are graceful woodland cousins to centaurs, blending the torsos of elves with the lower bodies of nimble deer. Because they rarely venture far from their wooded glades, some call them grove nymphs, although they're certainly more closely related to elves than nymphs. Alseid see the forest as an individual and a friend. They are suspicious of outsiders who do not share this view. Lost travelers who demonstrate deep respect for the forest may spot a distant alseid's white tail and chase after it as it bounces toward a road that leads out of the forest. Disrespectful strangers may follow the same tail to their doom.<br>Alseid have antlers growing from their foreheads. Antlers grow very slowly, branching every 10 years for the first century of life (so an alseid with six points per antler should be between 60 and 70 years old). Further points only develop with the blessing of the forest. No 14 point imperial alseid are known to exist but many tribes are governed by princes with 13 points, indicating that they've done a great service.",
+            offers: ["+2 Dexterity, +1 Wisdom", "Type: Monstrosity.", "Size: Medium.", "Speed: 40 feet.", "Darkvision: 60 feet.", "Alseid Weapon Training: You have proficiency with spears and shortbows.", "Light Hooves: You have proficiency in the Stealth skill.", "Quadruped: The mundane details of the structures of humanoids can present considerable obstacles for you. You have to squeeze when moving through trapdoors, manholes, and similar structures even when a Medium Humanoid wouldn't have to squeeze. In addition, ladders, stairs, and similar structures are difficult terrain for you.", "Woodfriend: When in a forest, you leave no tracks and can automatically discern true north.", "Languages: You can speak, read, and write Common and Elvish."],
+            subraces: {}
+        }, // 🌟 Closed Alsied
+	"Arachne": {
+            nation: "Insectoid Horde", 
+            source: "Homebrew",
+            blurb: "Most Arachne are solitary by nature and prefer living on their own, whether on the fringes of the city or the depths of the wilderness. Most Arachne are seen with fear and disgust and have become accustomed to hostile treatment by strangers and travelers, developing a darker, more cynical world view. Arachne are half humanoid spider hybrids, with their lower body resembling that of a large eight legged spider, belonging to their arachne parent, the upper body resembling their non arachne parent, whether they be human, elf, dwarf, or another. Arachne stand at roughly 7 feet tall on average. Their spider's half retains the attributes of the species of spider they belong to. Commonly found arachne subspecies include wolf spiders, jumping spiders, and widow spiders. Arachne are much more likely to be female at birth, giving the impression that all arachne are female, when in reality male arachne are simply much rarer and smaller.",
+            offers: ["+1 Wisdom", "Type: Monstrosity.", "Size: Medium.", "Speed: 35 feet walking, 20 feet climbing.", "Darkvision: 60 feet.", "Carapace: You are vulnerable to bludgeoning damage but resistant to piercing damage.", "Web Spinner: You may cast the spell web once per long rest at its lowest level without expending a spell slot. <i>Wisdom</i> is your spellcasting ability for this spell. You are immune to its effect.", "Hunting/Foraging: you have proficiency in the Survival skill.", "Languages: you can speak, read, and write, Common and Insectoid."],
+            subraces: {
+                "Jumping": {
+                    source: "Homebrew",
+                    blurb: "Write your first subrace description here.",
+                    offers: ["+2 Dexterity", "Speed Demon: You may add an additional 1d4 to your initiative roll.", "Natural Jumper: When making a high or long jump, you may use your <i>Dexterity</i> modifier instead of your <i>Strength</i> modifier. Your jumping distance is also multiplied by 3. You do not need a running start for jumps."]
+                },
+		"Widow": {
+                    source: "Homebrew",
+                    blurb: "Write your first subrace description here.",
+                    offers: ["+2 Charisma", "Natural Charm: You have proficiency with the Pesuasion skill.", "Superior Darkvision: 120 feet instead of 60 feet."]
+                },
+		"Wolf": {
+                    source: "Homebrew",
+                    blurb: "Write your first subrace description here.",
+                    offers: ["+2 Strength", "Athleticism: Proficiency with the Athletics Skill", "Ferocity: Once per turn you may increase the damage of one melee attack by 1d4."]
+                } // 🌟 Closed Subrace-One-Name
+            } // 🌟 Closed placeholder subraces list
+        }, // 🌟 Closed Arachne Race
+	"PLACEHOLDER-RACE-NAME": {
+            nation: "Elder Branch", 
+            source: "place holder",
+            blurb: "Write your custom lore blurb description text right here inside these quotation marks.",
+            offers: ["Feature 1 text", "Feature 2 text", "Feature 3 text"],
+            subraces: {
+                "Subrace-One-Name": {
+                    source: "place holder",
+                    blurb: "Write your first subrace description here.",
+                    offers: ["Subrace feature 1", "Subrace feature 2"]
+                } // 🌟 Closed Subrace-One-Name
+            } // 🌟 Closed placeholder subraces list
+        } // 🌟 Closed PLACEHOLDER-RACE-NAME
+    }, // 🌟 Closes the overall RACES list cleanly
+    classes: {
+        "Runesmith": {
+            source: "Artisan Classes Expansion",
+            blurb: "A martial scholar who carves primeval languages onto weapons and armor.",
+            offers: ["Hit Die: 1d8 per level", "Runic Attunement: Carve unique runes."]
+        },
+        "Warmage": {
+            source: "Frontline Military Guide",
+            blurb: "Battle-tested military spellcasters trained to cast defensive barriers.",
+            offers: ["Hit Die: 1d6 per level", "Tactical Deflection: Gain +2 to AC."]
+        }
+    } // 🌟 Closes classes list
+}; // 🌟 Closes homebrewData object
+// 📊 2. Active Wizard State tracking
+ let currentSelection = { nation: "", race: "", subrace: "", className: "" };
+let activeStage = "race"; 
+
+// Explicit list of nations in my campaign setting
+const nationsList = [
+    "Aberrant Empire", 
+    "Beast Commune", 
+    "Elder Branch", 
+    "Gilded Scales", 
+    "Human Union", 
+    "Insectoid Horde"
+];
+
+// 🛠️ 3. Initialization
+function initWizard() {
+    renderNationOptions();
+    showDefaultPreview();
+}
+
+function showDefaultPreview() {
+    document.getElementById("preview-title").textContent = "Inspect an Option";
+    document.getElementById("preview-blurb").textContent = "Click any option on the left to read its lore, traits, or features before locking it in.";
+    document.getElementById("preview-features").innerHTML = "";
+}
+
+// 🔄 4. Nation Selection Logic
+function renderNationOptions() {
+    const list = document.getElementById("nation-list");
+    list.innerHTML = "";
+    nationsList.forEach(nationName => {
+        let btn = document.createElement("button");
+        btn.className = "opt-btn";
+        btn.textContent = nationName;
+        btn.onclick = () => previewNation(nationName, btn);
+        list.appendChild(btn);
+    });
+}
+
+function previewNation(name, btnElement) {
+    clearActiveButtons(btnElement.parentElement);
+    btnElement.classList.add("active");
+    
+    let blurbText = `A prominent faction in your world. Selecting this will filter down the available species to those native to the borders of the ${name}.`;
+    updatePreviewPanel(name, blurbText, ["Filters selection list to native species."], "Setting Lore");
+    
+    currentSelection.nation = name;
+    document.getElementById("next-nation-btn").classList.remove("hidden");
+}
+
+function confirmNation() {
+    switchStep("step-nation", "step-race");
+    showDefaultPreview();
+    renderRaceOptions();
+    document.getElementById("next-race-btn").classList.add("hidden");
+}
+
+// 🔄 5. Filtered Race Options Logic
+function renderRaceOptions() {
+    const list = document.getElementById("race-list");
+    list.innerHTML = "";
+    
+    const filteredRaces = Object.keys(homebrewData.races).filter(raceName => {
+        return homebrewData.races[raceName].nation === currentSelection.nation;
+    });
+
+    if (filteredRaces.length === 0) {
+        list.innerHTML = `<p style="font-style:italic; color:#aaa; padding:10px;">No homebrew races added to the ${currentSelection.nation} yet.</p>`;
+        return;
+    }
+
+    filteredRaces.forEach(name => {
+        let btn = document.createElement("button");
+        btn.className = "opt-btn";
+        
+        const sourceText = homebrewData.races[name].source || "Unknown Source";
+        btn.textContent = `${name} (${sourceText})`;
+        
+        btn.onclick = () => previewRace(name, btn);
+        list.appendChild(btn);
+    });
+}
+
+// 🌟 THE MISSING SELECTION LOGIC FUNCTIONS 🌟
+function previewRace(name, btnElement) {
+    clearActiveButtons(btnElement.parentElement);
+    btnElement.classList.add("active");
+    
+    const data = homebrewData.races[name];
+    updatePreviewPanel(name, data.blurb, data.offers, data.source);
+    
+    currentSelection.race = name;
+    document.getElementById("next-race-btn").classList.remove("hidden");
+}
+
+function confirmRace() {
+    const raceData = homebrewData.races[currentSelection.race];
+    
+    // Skip subrace screen if none exist
+    if (!raceData.subraces || Object.keys(raceData.subraces).length === 0) {
+        currentSelection.subrace = "None"; 
+        activeStage = "class";
+        switchStep("step-race", "step-class");
+        showDefaultPreview();
+        renderClassOptions();
+        return; 
+    }
+
+    activeStage = "subrace";
+    switchStep("step-race", "step-subrace");
+    showDefaultPreview();
+    
+    const list = document.getElementById("subrace-list");
+    list.innerHTML = "";
+    document.getElementById("next-subrace-btn").classList.add("hidden");
+
+    Object.keys(raceData.subraces).forEach(name => {
+        let btn = document.createElement("button");
+        btn.className = "opt-btn";
+        
+        const sourceText = raceData.subraces[name].source || "Unknown Source";
+        btn.textContent = `${name} (${sourceText})`;
+        
+        btn.onclick = () => previewSubrace(name, btn);
+        list.appendChild(btn);
+    });
+}
+
+function previewSubrace(name, btnElement) {
+    clearActiveButtons(btnElement.parentElement);
+    btnElement.classList.add("active");
+    
+    const data = homebrewData.races[currentSelection.race].subraces[name];
+    updatePreviewPanel(name, data.blurb, data.offers, data.source);
+    
+    currentSelection.subrace = name;
+    document.getElementById("next-subrace-btn").classList.remove("hidden");
+}
+
+function confirmSubrace() {
+    activeStage = "class";
+    switchStep("step-subrace", "step-class");
+    showDefaultPreview();
+    renderClassOptions();
+}
+
+function renderClassOptions() {
+    const list = document.getElementById("class-list");
+    list.innerHTML = "";
+    document.getElementById("next-class-btn").classList.add("hidden");
+
+    Object.keys(homebrewData.classes).forEach(name => {
+        let btn = document.createElement("button");
+        btn.className = "opt-btn";
+        
+        const sourceText = homebrewData.classes[name].source || "Unknown Source";
+        btn.textContent = `${name} (${sourceText})`;
+        
+        btn.onclick = () => previewClass(name, btn);
+        list.appendChild(btn);
+    });
+}
+
+function previewClass(name, btnElement) {
+    clearActiveButtons(btnElement.parentElement);
+    btnElement.classList.add("active");
+    
+    const data = homebrewData.classes[name];
+    updatePreviewPanel(name, data.blurb, data.offers, data.source);
+    
+    currentSelection.className = name;
+    document.getElementById("next-class-btn").classList.remove("hidden");
+}
+
+function confirmClass() {
+    switchStep("step-class", "step-summary");
+    document.getElementById("preview-panel").classList.add("hidden");
+    
+    const summary = document.getElementById("character-summary");
+    const raceData = homebrewData.races[currentSelection.race];
+    const classData = homebrewData.classes[currentSelection.className];
+
+    let subraceHtml = "";
+    if (currentSelection.subrace !== "None") {
+        const subData = raceData.subraces[currentSelection.subrace];
+        subraceHtml = `
+            <p><strong>Subrace Bonuses (${currentSelection.subrace}):</strong></p>
+            <ul>${subData.offers.map(o => `<li>${o}</li>`).join('')}</ul>
+        `;
+    }
+
+   summary.innerHTML = `
+        <h3>${currentSelection.race} ${currentSelection.subrace !== "None" ? `(${currentSelection.subrace})` : ""}</h3>
+        <p style="color: #b38f4f; font-weight: bold; margin-top: -10px;">Citizen of the ${currentSelection.nation}</p>
+        <p><strong>Class:</strong> ${currentSelection.className}</p>
+        <hr style="border-color:#b38f4f;">
+        <p><strong>Core Racial Offers:</strong></p>
+        <ul>${raceData.offers.map(o => `<li>${o}</li>`).join('')}</ul>
+        ${subraceHtml}
+        <p><strong>Class Features:</strong></p>
+        <ul>${classData.offers.map(o => `<li>${o}</li>`).join('')}</ul>
+    `;
+
+    initTooltips();
+}
+
+// ⚙️ UI Helpers
+// [KEEP THIS AT THE TOP] 1. Your spell database
+const spellDatabase = {
+  "fire-bolt": "<strong>Fire Bolt</strong><br><small>Evocation Cantrip</small><br><br>You hurl a mote of fire at a creature. Range 120ft. Deal 1d10 fire damage.",
+  "prestidigitation": "<strong>Prestidigitation</strong><br><small>Transmutation Cantrip</small><br><br>You create a minor, harmless magical effect for 1 hour.",
+  "light": "<strong>Light</strong><br><small>Evocation Cantrip</small><br><br>Touch an object. It sheds bright light in a 20-foot radius and dim light for an additional 20 feet for 1 hour.",
+  "lesser-restoration": "<strong>Lesser Restoration</strong><br><small>2nd-Level Abjuration</small><br><br>Touch a creature and end one condition afflicting it: blinded, deafened, paralyzed, or poisoned.",
+  "daylight": "<strong>Daylight</strong><br><small>3rd-Level Evocation</small><br><br>A 60-foot-radius sphere of light spreads from a point you choose. It sheds bright light and dim light for another 60 feet for 1 hour.",
+  "gust-of-wind": "<strong>Gust of Wind</strong><br><small>2nd-Level Evocation (Concentration, up to 1 minute)</small><br><br>A line of strong wind 60 feet long and 10 feet wide blasts from you in a direction you choose for the duration. Each creature in the line must succeed on a Strength saving throw or be pushed 15 feet away from you in a direction following the line. A creature that ends its turn in the line must make the same save.<br><br>Any creature in the line must spend 2 feet of movement for every 1 foot it moves when moving closer to you.<br><br>The gust disperses gas or vapor, and it extinguishes candles and similar unprotected flames in the area. It causes protected flames, such as those of lanterns, to dance wildly and has a 50 percent chance to extinguish them.<br><br>As a bonus action on your later turns, you can change the direction in which the line blasts from you.",
+  "acid-splash": "<strong>Acid Splash</strong><br><small>Evocation Cantrip</small><br><br>You create an acidic bubble at a point within range, where it explodes in a 5-foot-radius Sphere. Each creature in that Sphere must succeed on a Dexterity saving throw or take 1d6 Acid damage.<br><b>Cantrip Upgrade.</b> The damage increases by 1d6 when you reach levels 5 (2d6), 11 (3d6), and 17 (4d6).",
+   "magic-missile": "<strong>Magic Missile</strong><br><small>1st-Level Evocation</small><br><br>You create three glowing darts of magical force. Each dart strikes a creature of your choice that you can see within range. A dart deals 1d4 + 1 Force damage to its target. The darts all strike simultaneously, and you can direct them to hit one creature or several. Using a <b>Higher-Level Spell Slot.</b> The spell creates one more dart for each spell slot level above 1.",
+   "hold-person": "<strong>Hold Person</strong><br><small>2nd-Level Enchantment</small><br><br>Choose a Humanoid that you can see within range. The target must succeed on a Wisdom saving throw or have the Paralyzed condition for the duration. At the end of each of its turns, the target repeats the save, ending the spell on itself on a success. Using a <b>Higher-Level Spell Slot.</b> You can target one additional Humanoid for each spell slot level above 2.",
+   "token-of-memory": "<strong>Token of Memory</strong><br><small>1st-Level Illusion</small><br><br>You entreat spirits of wind to create an illusion of an inanimate object no larger than 5 feet in any dimension. The illusion possesses all sensory qualities of the object (appearance, texture, the feel of weight, sounds, smell, and taste). It cannot actually function as the object it appears to be, however, as it has no mass.Any creature that encounters the illusion must make a Wisdom saving throw against your Spell Save DC to realize it is not real. A creature that observes the illusion when it is being created has advantage on this saving throw. If a creature realizes the illusory nature of the object, it must still spend an action and make a successful <i>Intelligence</i> (Investigation) check against your Spell Save DC to perceive anything the illusion is obscuring.<br><b>Resonances</b><br>The ambient magic of certain environments empowers the spirits answering your call. If you perform this invocation in one of the following areas, the effective spell slot level used to cast it increases by the listed amount (even if this pushes the level past your Proficiency Bonus or highest available spell slot):<br>Dim Light or Darkness: The spell slot level increases by +1.<br>Night of a New Moon: The spell slot level increases by +2.<br>The Feywild or a Spirit Realm Echo: The spell slot level increases by +2.<br><b>Upcasting Benefits</b> (Empowerments)When you cast this spell using a spell slot of 2nd level or higher, you can apply one or more of the following Empowerments for every level above 1st:<br>Hasten Rites (1 Level): The casting time of this spell becomes 1 action.<br>Instantly Swift (2 Levels): The casting time of this spell becomes 1 bonus action.<br>Enduring Trick (1 Level): The duration of the spell increases to 10 hours.<br>Subtle Illusion (1 Level): The DC for the Wisdom saving throw and <i>Intelligence</i> (Investigation) check increases by +2 for every level spent this way.<br>Fractured Mirror (1 Level): You create one additional copy of the object for every level spent this way.",
+	"dominion-of-water": "<strong>Dominion of Water</strong><br><small>2nd-Level Divination</small><br><br>You touch a pool of liquid water and entreat the water spirits to clear its surface. The ripples smooth out, transforming the pool into a magical mirror that reflects the reflection and immediate surroundings of another specific body of water you have seen before. You can see and hear through this distant water as if you were looking out from just beneath its surface, though you cannot interact with the environment or cast spells through it. Any creature near the target body of water can make a <i>Wisdom</i> (Perception) check against your Spell Save DC to notice a strange ripple or face in the water.<br><b>Resonances</b><br>The ambient magic of certain environments empowers the spirits answering your call. If you perform this invocation in one of the following areas, the effective spell slot level used to cast it increases by the listed amount (even if this pushes the level past your Proficiency Bonus or highest available spell slot):<br>Submerged or Swimming in Water: The spell slot level increases by +1.<br>Heavy Rain or Monsoon: The spell slot level increases by +1.<br>The Shadowlands or a Corrupted Font: The spell slot level increases by +2.<br><b>Upcasting Benefits</b> (Empowerments) When you cast this spell using a spell slot of 3rd level or higher, you can apply one or more of the following Empowerments for every level above 2nd:<br>Hasten Rites (1 Level): The casting time of this spell becomes 1 action.<br>Instantly Swift (2 Levels): The casting time of this spell becomes 1 bonus action.<br>Enduring Eye (1 Level): The duration of the scrying effect increases to 1 hour.<br>Clear Reflection (1 Level): The DC for creatures to notice your scrying increases by +2 for every level spent this way.<br>Deep Echoes (1 Level): You can scry on a body of water you have only heard described, rather than one you have personally seen.",
+	"polymorph": "<strong>Polymorph</strong><br><small>4th-Level Transmutation</small><br><br>You attempt to transform a creature that you can see within range into a Beast. The target must succeed on a Wisdom saving throw or shape-shift into Beast form for the duration. That form can be any Beast you choose that has a Challenge Rating equal to or less than the target’s (or the target’s level if it doesn’t have a Challenge Rating). The target’s game statistics are replaced by the stat block of the chosen Beast, but the target retains its alignment, personality, creature type, Hit Points, and Hit Point Dice.<br>The target gains a number of Temporary Hit Points equal to the Hit Points of the Beast form. These Temporary Hit Points vanish if any remain when the spell ends. The spell ends early on the target if it has no Temporary Hit Points left.<br>The target is limited in the actions it can perform by the anatomy of its new form, and it can’t speak or cast spells.<br>The target’s gear melds into the new form. The creature can’t use or otherwise benefit from any of that equipment.",
+};
+
+// [KEEP THIS AT THE TOP] // 2. Create a single tooltip element in the DOM
+const tooltipBox = document.createElement('div');
+tooltipBox.className = 'spell-box';
+document.body.appendChild(tooltipBox);
+
+// 3. New reusable helper function to attach hover listeners to active text
+function initTooltips() {
+  document.querySelectorAll('.spell-tooltip').forEach(element => {
+    // Clear any previous duplicate event listener hooks
+    element.removeAttribute('onmouseenter'); 
+    
+    // TRIGGER ON HOVER START (Calculates absolute, static placement)
+    element.addEventListener('mouseenter', (e) => {
+      const spellKey = element.getAttribute('data-spell');
+      
+      if (typeof spellDatabase !== 'undefined' && spellDatabase[spellKey]) {
+        tooltipBox.innerHTML = spellDatabase[spellKey];
+        tooltipBox.classList.add('visible');
+        
+        // 1. Gather all coordinate measurements
+        const targetRect = element.getBoundingClientRect();
+        const boxHeight = tooltipBox.offsetHeight || 120;
+        const boxWidth = tooltipBox.offsetWidth || 250;
+        const scrollY = window.scrollY;
+        
+        // 2. Calculate ideal horizontal center position
+        let leftPosition = targetRect.left + (targetRect.width / 2) - (boxWidth / 2);
+        
+        // Horizontal Collision: Stop the popup from clipping off the right or left sides of the monitor
+        if (leftPosition + boxWidth + 15 > window.innerWidth) {
+          leftPosition = window.innerWidth - boxWidth - 15;
+        }
+        if (leftPosition < 15) {
+          leftPosition = 15;
+        }
+        
+        // 3. Calculate vertical alignment (Defaulting to ABOVE the text)
+        let topPosition = targetRect.top + scrollY - boxHeight - 10;
+        
+        // Vertical Collision: If placing it above hits your sticky navbar (60px ceiling)
+        if (targetRect.top - 60 < boxHeight) {
+          // Flip it cleanly BELOW the text link instead
+          topPosition = targetRect.bottom + scrollY + 10;
+        }
+        
+        // 4. Bind the coordinate values to the tooltip instance
+        tooltipBox.style.top = topPosition + 'px';
+        tooltipBox.style.left = leftPosition + 'px';
+      }
+    });
+
+    // MOUSE LEAVE SAFETIES (Allows sliding mouse between the link and the popup box smoothly)
+    let hideTimeout;
+    
+    const startHide = () => {
+      hideTimeout = setTimeout(() => {
+        tooltipBox.classList.remove('visible');
+      }, 100); // 100ms grace window lets the player move their mouse into the tooltip box
+    };
+
+    const stopHide = () => {
+      clearTimeout(hideTimeout);
+    };
+
+    // Listeners on the active link text
+    element.addEventListener('mouseleave', startHide);
+    element.addEventListener('mouseenter', stopHide);
+    
+    // Listeners on the tooltip box itself so it stays open while being scrolled
+    tooltipBox.style.pointerEvents = 'auto'; // CRITICAL: Allows mouse interaction inside the box
+    tooltipBox.addEventListener('mouseleave', startHide);
+    tooltipBox.addEventListener('mouseenter', stopHide);
+  });
+}
+function updatePreviewPanel(title, blurb, offersArray, sourceText) {
+    document.getElementById("preview-title").textContent = title;
+    
+    let sourceLabel = sourceText ? `<p style="font-size: 13px; color: #b38f4f; font-style: italic; margin-top: -5px;">Source: ${sourceText}</p>` : "";
+    document.getElementById("preview-blurb").innerHTML = `${sourceLabel}<p>${blurb}</p>`;
+    
+    let listHtml = "<h4>What this provides:</h4><ul>";
+    offersArray.forEach(feature => {
+        listHtml += `<li>${feature}</li>`;
+    });
+    listHtml += "</ul>";
+    
+    document.getElementById("preview-features").innerHTML = listHtml;
+
+    // 🔥 CRITICAL: Refresh tooltip listeners now that new HTML spell links exist!
+    initTooltips();
+}
+
+function clearActiveButtons(containerElement) {
+    const buttons = containerElement.getElementsByClassName("opt-btn");
+    for (let b of buttons) {
+        b.classList.remove("active");
+    }
+}
+
+function switchStep(oldId, newId) {
+    document.getElementById(oldId).classList.add("hidden");
+    document.getElementById(newId).classList.remove("hidden");
+}
+
+function goBack(target) {
+    document.getElementById("preview-panel").classList.remove("hidden");
+    showDefaultPreview();
+    if(target === 'nation') {
+        switchStep("step-race", "step-nation");
+        renderNationOptions();
+        document.getElementById("next-nation-btn").classList.add("hidden");
+    }
+    if(target === 'race') {
+        switchStep("step-subrace", "step-race");
+        renderRaceOptions();
+    }
+    if(target === 'subrace') {
+        const raceData = homebrewData.races[currentSelection.race];
+        if (!raceData.subraces || Object.keys(raceData.subraces).length === 0) {
+            switchStep("step-class", "step-race");
+            renderRaceOptions();
+        } else {
+            switchStep("step-class", "step-subrace");
+            confirmRace(); 
+        }
+    }
+}
+
+function restartWizard() {
+    currentSelection = { nation: "", race: "", subrace: "", className: "" };
+    document.getElementById("preview-panel").classList.remove("hidden");
+    document.getElementById("next-nation-btn").classList.add("hidden");
+    switchStep("step-summary", "step-nation");
+    initWizard();
+}
+
+// Run on file load
+initWizard();
+</script>
+</body>
+</html>
