@@ -1,0 +1,178 @@
+/* Core Styling */
+body {
+    background-color: #1a1510;
+    color: #f4ebd0;
+    font-family: 'Georgia', serif;
+    margin: 0;
+    padding: 0;
+}
+
+/* Navigation Bar */
+.navbar {
+    background-color: #2d1f10;
+    display: flex;
+    justify-content: center;
+    padding: 15px;
+    border-bottom: 3px solid #8b5a2b;
+}
+
+.navbar button {
+    background-color: #4a3518;
+    border: 1px solid #8b5a2b;
+    color: #f4ebd0;
+    cursor: pointer;
+    font-size: 16px;
+    margin: 0 10px;
+    padding: 10px 20px;
+    transition: 0.3s;
+}
+
+.navbar button:hover {
+    background-color: #8b5a2b;
+}
+
+/* Content Layout */
+.content {
+    max-width: 950px; /* Widened slightly to give the 2-column layout room to breathe */
+    margin: 40px auto;
+    padding: 20px;
+}
+
+.view {
+    background-color: #2a2216;
+    border: 2px solid #8b5a2b;
+    border-radius: 8px;
+    padding: 3px 30px 30px 30px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+}
+
+/* Utility Class to Hide Views */
+.hidden {
+    display: none !important;
+}
+
+/* Two-Column Layout Splits */
+.builder-layout {
+    display: flex;
+    gap: 20px;
+    margin-top: 20px;
+    align-items: flex-start;
+}
+
+/* Options Interaction Elements */
+.grid {
+    flex: 3;
+    display: grid;
+    grid-template-columns: 1fr; /* Single column stack works cleaner next to a panel */
+    gap: 12px;
+    margin-top: 0;
+}
+
+.option-card {
+    background-color: #3d3120;
+    border: 1px solid #634423;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 15px;
+    text-align: center;
+    transition: 0.2s;
+}
+
+.option-card:hover {
+    background-color: #634423;
+    border-color: #f4ebd0;
+}
+
+#random-btn {
+    background-color: #8b2b2b;
+    border: 1px solid #f4ebd0;
+    color: white;
+    cursor: pointer;
+    padding: 10px 15px;
+    font-weight: bold;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+/* Right Column: Inspector Panel */
+.preview-column {
+    flex: 2;
+    background-color: #1a1510;
+    border: 1px solid #8b5a2b;
+    border-radius: 4px;
+    padding: 20px;
+    position: sticky;
+    top: 20px; /* Keeps the panel locked on screen if the options list is long */
+    text-align: left;
+}
+
+/* Scrollable Features & Spell Box */
+#preview-features {
+    max-height: 250px;
+    overflow-y: auto;
+    background-color: #130f0b;
+    padding: 12px;
+    border-radius: 4px;
+    border: 1px dashed #4a3518;
+    margin-bottom: 15px;
+}
+
+/* Core Spell Tooltip Links */
+/* Style the hoverable text link */
+.spell-tooltip {
+  color: #e4a853;
+  font-weight: bold;
+  border-bottom: 1px dashed #b89244;
+  cursor: help;
+}
+
+/* Your custom expanded tooltip box layout */
+.spell-box {
+  position: fixed; 
+  z-index: 2000; 
+  width: 320px; 
+  max-height: 250px; 
+  overflow-y: auto; 
+  background-color: #2e261f; 
+  color: #f4ebd0; 
+  padding: 14px;
+  border: 2px solid #b89244; 
+  border-radius: 4px;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.6);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  pointer-events: auto;
+  display: none; 
+}
+
+/* Your custom visual scrollbar theme */
+.spell-box::-webkit-scrollbar {
+  width: 5px;
+}
+.spell-box::-webkit-scrollbar-thumb {
+  background: #b89244;
+  border-radius: 3px;
+}
+
+/* Class to show the tooltip via JavaScript tracking */
+.spell-box.visible {
+  display: block;
+}
+
+/* Confirm Button styling inside panel */
+.confirm-choice-btn {
+    background-color: #8b5a2b;
+    color: #f4ebd0;
+    border: 1px solid #f4ebd0;
+    padding: 12px 15px;
+    width: 100%;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+    border-radius: 4px;
+}
+
+.confirm-choice-btn:hover {
+    background-color: #a06b3a;
+}

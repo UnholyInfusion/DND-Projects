@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dormegantu Player Companion</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Top Navigation Menu -->
+    <nav class="navbar">
+        <button onclick="switchView('builder-view')">Character Builder</button>
+        <button onclick="switchView('forging-view')">Forging Minigame</button>
+        <button onclick="switchView('alchemy-view')">Alchemy Minigame</button>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="content">
+
+        <!-- 1. Character Builder View -->
+<section id="builder-view" class="view">
+    <h2>Character Creation</h2>
+    <button id="random-btn" onclick="generateRandomCharacter()">🎲 Random Character</button>
+    
+    <h3 id="step-title">Step 1: Choose Your Nation</h3>
+
+    <!-- Two-Column Layout Wrapper -->
+    <div class="builder-layout">
+        
+        <!-- Left Column: The clickable choices -->
+        <div id="options-grid" class="grid"></div>
+
+        <!-- Right Column: Your Inspector Panel -->
+        <div id="preview-panel" class="preview-column">
+            <h3 id="preview-title">Inspect an Option</h3>
+            <p id="preview-blurb" style="font-style: italic; color: #aaa;">
+                Click any option on the left to read its lore, racial traits, or class abilities before making your final selection.
+            </p>
+            <div id="preview-features"></div>
+            <!-- The confirmation button lives here now! -->
+            <div id="preview-actions"></div>
+        </div>
+
+    </div>
+</section>
+
+        <!-- 2. Character Summary View -->
+        <section id="summary-view" class="view hidden">
+            <h2>Character Summary</h2>
+            <div id="summary-card"></div>
+            <button onclick="restartBuilder()">Create Another Character</button>
+        </section>
+
+        <!-- 3. Forging Minigame View -->
+        <section id="forging-view" class="view hidden">
+            <h2>The Royal Forge</h2>
+            <p>Select materials to forge homebrew gear (Coming soon!).</p>
+        </section>
+
+        <!-- 4. Alchemy Minigame View -->
+        <section id="alchemy-view" class="view hidden">
+            <h2>Alchemy Lab</h2>
+            <p>Mix reagents to brew magical potions (Coming soon!).</p>
+        </section>
+
+    </main>
+
+	<div id="global-spell-box" class="spell-box"></div>
+
+	<div id="global-feat-box" class="feat-box"></div>
+
+	<script src="script.js"></script>
+</body>
+</html>
