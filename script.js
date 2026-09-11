@@ -84,7 +84,7 @@ function clearInspector() {
     if (box) box.classList.remove('visible');
 }
 
-// 3. STEP PROGRESSION LOGIC FRAMEWORK
+// STEP PROGRESSION LOGIC FRAMEWORK
 function advanceBuilder(step, selection) {
     characterDraft[step] = selection;
     clearInspector();
@@ -137,7 +137,7 @@ function advanceBuilder(step, selection) {
     }
 }
 
-// 4. RENDERING LOOPS (Calls inspectOption safely)
+// RENDERING LOOPS (Calls inspectOption safely)
 function renderNationOptions() {
     document.getElementById('step-title').innerText = "Step 1: Choose Your Nation";
     
@@ -424,9 +424,13 @@ function restartBuilder() {
     renderNationOptions();
 }
 
-// 6. INITIALIZATION EXECUTION TRIGGER
+// INITIALIZATION EXECUTION TRIGGER
+let spellHideTimeout;
+
 document.addEventListener('mouseover', function(e) {
     if (e.target.classList.contains('spell-tooltip')) {
+        clearTimeout(spellHideTimeout);
+
         const spellName = e.target.getAttribute('data-spell');
         const spellDescription = spellBook[spellName];
 
@@ -467,6 +471,8 @@ document.addEventListener('mouseover', function(e) {
             box.style.left = leftPosition + 'px';
             box.style.top = topPosition + 'px';
         }
+    } else if (e.target.closest('#global-spell-box')) {
+        clearTimeout(spellHideTimeout);
     }
 });
 
@@ -474,13 +480,14 @@ document.addEventListener('mouseout', function(e) {
     const box = document.getElementById('global-spell-box');
     const movingTo = e.relatedTarget;
     
-    // 1. Safety Check: If moving from the link INTO the box, or moving INSIDE the box, freeze state!
-    if (box && box.contains(movingTo)) return;
-    if (e.target.closest('#global-spell-box') && (movingTo && (movingTo.classList.contains('spell-tooltip') || box.contains(movingTo)))) return;
-
-    // 2. Global Clear: If leaving the link or leaving the spell-box entirely, turn it off instantly
+    // Allow time to cross the gap between the fixed tooltip and its source link.
     if (e.target.classList.contains('spell-tooltip') || e.target.closest('#global-spell-box')) {
-        if (box) box.classList.remove('visible');
+        if (movingTo && (movingTo.classList.contains('spell-tooltip') || box.contains(movingTo))) return;
+
+        clearTimeout(spellHideTimeout);
+        spellHideTimeout = setTimeout(() => {
+            box.classList.remove('visible');
+        }, 200);
     }
 });
 
