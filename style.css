@@ -2,7 +2,7 @@
 body {
     background-color: #1a1510;
     color: #f4ebd0;
-    font-family: 'Georgia', serif;
+    font-family: 'Cinzel', serif;
     margin: 0;
     padding: 0;
 }
@@ -12,7 +12,8 @@ body {
     background-color: #2d1f10;
     display: flex;
     justify-content: center;
-    padding: 15px;
+    padding-bottom: 0;
+    padding: 15px 15px 0 15px;
     border-bottom: 3px solid #8b5a2b;
 }
 
@@ -21,6 +22,7 @@ body {
     border: 1px solid #8b5a2b;
     color: #f4ebd0;
     cursor: pointer;
+    font-family: 'Cinzel', serif;
     font-size: 16px;
     margin: 0 10px;
     padding: 10px 20px;
@@ -89,6 +91,7 @@ body {
     color: white;
     cursor: pointer;
     padding: 10px 15px;
+    font-family: 'Cinzel', serif;
     font-weight: bold;
     border-radius: 4px;
     margin-bottom: 15px;
@@ -133,7 +136,7 @@ body {
   width: 320px; 
   max-height: 250px; 
   overflow-y: auto; 
-  background-color: #2e261f; 
+  background-color: #044111; 
   color: #f4ebd0; 
   padding: 14px;
   border: 2px solid #b89244; 
@@ -143,6 +146,7 @@ body {
   line-height: 1.4;
   pointer-events: auto;
   display: none; 
+  color: #000000;
 }
 
 /* Your custom visual scrollbar theme */
@@ -166,6 +170,7 @@ body {
     border: 1px solid #f4ebd0;
     padding: 12px 15px;
     width: 100%;
+    font-family: 'Cinzel', serif;
     font-size: 14px;
     font-weight: bold;
     cursor: pointer;
@@ -175,4 +180,13 @@ body {
 
 .confirm-choice-btn:hover {
     background-color: #a06b3a;
+}
+
+.create-character-btn {
+   background-color: #4a3518;
+    border: 1px solid #8b5a2b;
+    color: #f4ebd0;
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    border-radius: 0 0 8px 8px;
 }

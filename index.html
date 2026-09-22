@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dormegantu Player Companion</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -49,18 +52,47 @@
         <section id="summary-view" class="view hidden">
             <h2>Character Summary</h2>
             <div id="summary-card"></div>
-            <button onclick="restartBuilder()">Create Another Character</button>
+            <button class="create-character-btn" onclick="restartBuilder()">Create Another Character</button>
         </section>
 
         <!-- 3. Forging Minigame View -->
         <section id="forging-view" class="view hidden">
-            <h2>The Royal Forge</h2>
+            <h2>The Forge</h2>
             <p>Select materials to forge homebrew gear (Coming soon!).</p>
+            <label for="weapon">Choose the kind of weapon you would like to create:</label>
+            <select id="weapon" name="weapon">
+                <option value="">Select one</option>
+                <option value="battleaxe">Battleaxe</option>
+                <option value="club">Club</option>
+                <option value="dagger">Dagger</option>
+                <option value="flail">Flail</option>
+                <option value="glaive">Glaive</option>
+                <option value="greataxe">Greataxe</option>
+                <option value="greatclub">Greatclub</option>
+                <option value="greatsword">Greatsword</option>
+                <option value="halberd">Halberd</option>
+                <option value="handaxe">Handaxe</option>
+                <option value="javalin">Javalin</option>
+                <option value="lance">Lance</option>
+                <option value="light hammer">Light hammer</option>
+                <option value="longsword">Longsword</option>
+                <option value="mace">Mace</option>
+                <option value="maul">Maul</option>
+                <option value="morningstar">Morningstar</option>
+                <option value="pike">Pike</option>
+                <option value="quarterstaff">Quarterstaff</option>
+                <option value="rapier">Rapier</option>
+                <option value="scimitar">Scimitar</option>
+                <option value="shortsword">Shortsword</option>
+                <option value="sickle">Sickle</option>
+                <option value="spear">Spear</option>
+                <option value="trident">Trident</option>
+            </select>
         </section>
 
         <!-- 4. Alchemy Minigame View -->
         <section id="alchemy-view" class="view hidden">
-            <h2>Alchemy Lab</h2>
+            <h2>Alchemy Cauldron</h2>
             <p>Mix reagents to brew magical potions (Coming soon!).</p>
         </section>
 
