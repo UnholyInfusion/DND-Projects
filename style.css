@@ -136,17 +136,16 @@ body {
   width: 320px; 
   max-height: 250px; 
   overflow-y: auto; 
-  background-color: #044111; 
-  color: #f4ebd0; 
+  background-color: #183f25; 
+  color: #f5eed7; 
   padding: 14px;
-  border: 2px solid #b89244; 
+  border: 2px solid #c9a961;
   border-radius: 4px;
   box-shadow: 0 6px 12px rgba(0,0,0,0.6);
   font-size: 0.9rem;
   line-height: 1.4;
   pointer-events: auto;
   display: none; 
-  color: #000000;
 }
 
 /* Your custom visual scrollbar theme */

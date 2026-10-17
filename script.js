@@ -4,10 +4,68 @@ let characterDraft = {
 	race: "",
 	subrace: "",
 	background: "",
-	class: ""
+    class: "",
+    choiceSelections: {
+        skills: [],
+        proficiencies: [],
+        languages: [],
+    }
 };
 
 let currentStep = "nation";
+
+function inferCreatureType(mechanics) {
+    const typeMatch = mechanics?.match(/<strong>\s*Type:?\s*<\/strong>\s*([^.<]+)/i);
+    if (!typeMatch) return "Humanoid";
+
+    return typeMatch[1]
+        .trim()
+        .replace(/^you are an?\s+/i, "")
+        .replace(/^an?\s+/i, "")
+        .replace(/^./, character => character.toUpperCase());
+}
+
+function asArray(value) {
+    if (value == null) return [];
+    if (Array.isArray(value)) return value;
+    if (typeof value === "string") {
+        return value
+            .split(/[\n,]/)
+            .map(item => item.trim())
+            .filter(Boolean);
+    }
+    if (typeof value === "object") {
+        return Object.keys(value);
+    }
+    return [value];
+}
+
+function normalizeDataEntry(entry, inferType = false) {
+    if (!entry || typeof entry !== "object") return;
+
+    if (inferType && !entry.type) {
+        entry.type = inferCreatureType(entry.mechanics);
+    }
+
+    entry.languages = asArray(entry.languages);
+    entry.proficiencies = asArray(entry.proficiencies);
+    entry.fixedLanguages = asArray(entry.fixedLanguages);
+    entry.fixedSkills = asArray(entry.fixedSkills);
+    entry.fixedProficiencies = asArray(entry.fixedProficiencies);
+    entry.fixedToolProficiencies = asArray(entry.fixedToolProficiencies);
+    entry.features ||= {};
+    entry.subraces ||= {};
+
+    Object.values(entry.subraces).forEach(subrace => normalizeDataEntry(subrace));
+}
+
+function normalizeGameData() {
+    Object.values(gameData.races).forEach(race => normalizeDataEntry(race, true));
+    Object.values(gameData.universalSubraces).forEach(subrace => normalizeDataEntry(subrace));
+    Object.values(gameData.nations).forEach(nation => normalizeDataEntry(nation));
+    Object.values(gameData.backgrounds).forEach(background => normalizeDataEntry(background));
+    Object.values(gameData.classes).forEach(characterClass => normalizeDataEntry(characterClass));
+}
 
 // Global view switching
 function switchView(viewId) {
@@ -243,6 +301,316 @@ function renderClassOptions() {
     });
 }
 
+function buildCharacterSummary(chosenRaceKey, chosenSubraceKey) {
+    const baseRace = gameData.races[chosenRaceKey] || {};
+    const subrace = baseRace.subraces?.[chosenSubraceKey] || gameData.universalSubraces?.[chosenSubraceKey] || {};
+
+    return {
+        proficiencies: [
+            ...(baseRace.proficiencies || []),
+            ...(subrace.proficiencies || [])
+        ],
+        languages: Array.from(new Set([
+            ...(baseRace.languages || []),
+            ...(subrace.languages || [])
+        ])),
+        features: {
+            ...(baseRace.features || {}),
+            ...(subrace.features || {})
+        }
+    };
+}
+
+function getCharacterSourceData() {
+    const race = gameData.races[characterDraft.race] || {};
+    const subrace = race.subraces?.[characterDraft.subrace] || gameData.universalSubraces?.[characterDraft.subrace] || {};
+
+    return [
+        race,
+        subrace,
+        gameData.nations[characterDraft.nation] || {},
+        gameData.backgrounds[characterDraft.background] || {},
+        gameData.classes[characterDraft.class] || {}
+    ];
+}
+
+function catalogName(library, key) {
+    if (library[key]) return library[key].name || key;
+
+    const normalizedKey = normalizeCatalogValue(key);
+    const matchingKey = Object.keys(library).find(candidate =>
+        normalizeCatalogValue(candidate) === normalizedKey ||
+        normalizeCatalogValue(library[candidate]?.name) === normalizedKey
+    );
+    return library[matchingKey]?.name || key;
+}
+
+function normalizeCatalogValue(value) {
+    return String(value).toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function skillKey(value) {
+    const normalizedValue = normalizeCatalogValue(value);
+    const skillMatch = Object.keys(SKILL_LIBRARY).find(key =>
+        normalizeCatalogValue(key) === normalizedValue ||
+        normalizeCatalogValue(SKILL_LIBRARY[key].name) === normalizedValue
+    );
+    if (skillMatch) return skillMatch;
+
+    return Object.keys(PROFICIENCY_LIBRARY).find(key =>
+        normalizeCatalogValue(key) === normalizedValue ||
+        normalizeCatalogValue(PROFICIENCY_LIBRARY[key].name) === normalizedValue
+    ) || value;
+}
+
+function isSkillProficiency(value) {
+    const key = skillKey(value);
+    return Boolean(SKILL_LIBRARY[key]) ||
+        PROFICIENCY_LIBRARY[key]?.category === "Skill" ||
+        PROFICIENCY_LIBRARY[key]?.catagory === "Skill";
+}
+
+function skillName(key) {
+    return catalogName(SKILL_LIBRARY, key) === key
+        ? catalogName(PROFICIENCY_LIBRARY, key)
+        : catalogName(SKILL_LIBRARY, key);
+}
+
+function choiceKeys(rule, library) {
+    if (!rule) return [];
+    if (rule.options === "all") return Object.keys(library);
+    if (Array.isArray(rule.options)) return rule.options;
+
+    if (rule.options && typeof rule.options === "object") {
+        if (rule.options.category) {
+            const categoryKeys = Object.keys(library).filter(key =>
+                library[key]?.category === rule.options.category
+            );
+            return Array.isArray(rule.options.include)
+                ? categoryKeys.filter(key => rule.options.include.includes(key))
+                : categoryKeys;
+        }
+
+        return Object.keys(library).filter(key =>
+            (rule.options.type && library[key]?.type === rule.options.type) ||
+            rule.options.include?.includes(key)
+        );
+    }
+
+    return [];
+}
+
+function compileCharacterRace(chosenRaceKey, chosenUniversalSubraceKey) {
+    const baseRace = gameData.races[chosenRaceKey] || {};
+    const universalSubrace = gameData.universalSubraces?.[chosenUniversalSubraceKey] || {};
+    const nativeSubrace = baseRace.subraces?.[chosenUniversalSubraceKey] || {};
+    const selectedSubrace = Object.keys(nativeSubrace).length > 0 ? nativeSubrace : universalSubrace;
+
+    return {
+        raceName: chosenRaceKey,
+        subraceName: selectedSubrace.name || chosenUniversalSubraceKey || "None",
+        creatureType: selectedSubrace.typeOverride ?? baseRace.type ?? "Humanoid",
+        features: {
+            ...(baseRace.features || {}),
+            ...(selectedSubrace.features || {})
+        }
+    };
+}
+
+function compileCharacterSummary() {
+    const allSources = getCharacterSourceData();
+    const raceSource = gameData.races[characterDraft.race] || {};
+    const subraceSource = raceSource.subraces?.[characterDraft.subrace] || gameData.universalSubraces?.[characterDraft.subrace] || {};
+    const backgroundSource = gameData.backgrounds[characterDraft.background] || {};
+    const classSource = gameData.classes[characterDraft.class] || {};
+    const grantedSources = [raceSource, subraceSource, backgroundSource, classSource];
+    const compiledRace = compileCharacterRace(characterDraft.race, characterDraft.subrace);
+    const selected = characterDraft.choiceSelections || { languages: [], skills: [], proficiencies: [] };
+    const languageKeys = [];
+    const skillKeys = [];
+    const proficiencyKeys = [];
+    const features = {};
+    const choiceRules = [];
+
+    grantedSources.forEach(source => {
+        languageKeys.push(...asArray(source.languages), ...asArray(source.fixedLanguages));
+        skillKeys.push(...asArray(source.fixedSkills).map(skillKey));
+        const sourceProficiencies = [
+            ...asArray(source.proficiencies),
+            ...asArray(source.fixedProficiencies),
+            ...asArray(source.fixedToolProficiencies)
+        ];
+        skillKeys.push(...sourceProficiencies.filter(isSkillProficiency).map(skillKey));
+        proficiencyKeys.push(...sourceProficiencies.filter(value => !isSkillProficiency(value)));
+        Object.assign(features, source.features || {});
+    });
+
+    allSources.forEach(source => {
+        [
+            ["languages", source.choiceLanguages, LANGUAGE_LIBRARY],
+            ["skills", source.choiceSkills, SKILL_LIBRARY],
+            ["proficiencies", source.choiceProficiencies, PROFICIENCY_LIBRARY],
+            ["proficiencies", source.choiceToolProficiencies, PROFICIENCY_LIBRARY]
+        ].forEach(([kind, rule, library]) => {
+            if (rule) choiceRules.push({ kind, rule, library });
+        });
+    });
+
+    languageKeys.push(...selected.languages);
+    skillKeys.push(...selected.skills);
+    skillKeys.push(...selected.proficiencies.filter(isSkillProficiency).map(skillKey));
+    proficiencyKeys.push(...selected.proficiencies.filter(value => !isSkillProficiency(value)));
+
+    return {
+        languages: Array.from(new Set(languageKeys)).map(key => catalogName(LANGUAGE_LIBRARY, key)),
+        skills: Array.from(new Set(skillKeys)).map(skillName),
+        proficiencies: Array.from(new Set(proficiencyKeys)).map(key => catalogName(PROFICIENCY_LIBRARY, key)),
+        features,
+        choiceRules,
+        creatureType: compiledRace.creatureType
+    };
+}
+
+function buildCharacterSelectionState() {
+    const sources = getCharacterSourceData();
+    const selected = characterDraft.choiceSelections || { languages: [], skills: [], proficiencies: [] };
+    const state = {
+        fixed: { languages: [], skills: [], proficiencies: [] },
+        choices: {
+            languages: [...selected.languages],
+            skills: [...selected.skills],
+            proficiencies: [...selected.proficiencies]
+        },
+        expertise: []
+    };
+
+    sources.forEach(source => {
+        state.fixed.languages.push(...asArray(source.languages), ...asArray(source.fixedLanguages));
+        state.fixed.skills.push(...asArray(source.fixedSkills).map(skillKey));
+        const sourceProficiencies = [
+            ...asArray(source.proficiencies),
+            ...asArray(source.fixedProficiencies),
+            ...asArray(source.fixedToolProficiencies)
+        ];
+        state.fixed.skills.push(...sourceProficiencies.filter(isSkillProficiency).map(skillKey));
+        state.fixed.proficiencies.push(...sourceProficiencies.filter(value => !isSkillProficiency(value)));
+        state.expertise.push(...asArray(source.expertise));
+    });
+
+    return state;
+}
+
+function validateCharacterSelection(state) {
+    const errors = [];
+    const warnings = [];
+    const duplicateMessage = (category, key) => `Duplicate ${category}: "${catalogName(category === "languages" ? LANGUAGE_LIBRARY : category === "skills" ? SKILL_LIBRARY : PROFICIENCY_LIBRARY, key)}".`;
+
+    ["languages", "skills", "proficiencies"].forEach(category => {
+        const allValues = [...state.fixed[category], ...state.choices[category]];
+        const seen = new Set();
+        allValues.forEach(value => {
+            if (seen.has(value)) {
+                errors.push(duplicateMessage(category, value));
+            }
+            seen.add(value);
+        });
+    });
+
+    state.expertise.forEach(key => {
+        if (!state.fixed.skills.includes(key) && !state.fixed.proficiencies.includes(key) && !state.choices.skills.includes(key) && !state.choices.proficiencies.includes(key)) {
+            warnings.push(`Expertise "${catalogName(SKILL_LIBRARY, key)}" has no matching proficiency.`);
+        }
+    });
+
+    return { isValid: errors.length === 0, errors, warnings };
+}
+
+function updateDropdownOptionsInUI(state) {
+    ["languages", "skills", "proficiencies"].forEach(category => {
+        const fixed = new Set(state.fixed[category]);
+        const choices = new Set(state.choices[category]);
+        const claimed = new Set([...fixed, ...choices]);
+        document.querySelectorAll(`.character-choice[data-kind="${category}"]`).forEach(select => {
+            const currentValues = new Set(Array.from(select.selectedOptions, option => option.value));
+            Array.from(select.options).forEach(option => {
+                if (fixed.has(option.value)) {
+                    option.selected = false;
+                    option.disabled = true;
+                    return;
+                }
+
+                const isClaimed = claimed.has(option.value);
+                const isCurrentlySelected = currentValues.has(option.value);
+
+                option.disabled = isClaimed && !isCurrentlySelected;
+            });
+        });
+    });
+}
+
+function renderValidationMessages(validation) {
+    if (validation.isValid && validation.warnings.length === 0) return "";
+    const errors = validation.errors.map(error => `<li>${error}</li>`).join("");
+    const warnings = validation.warnings.map(warning => `<li>${warning}</li>`).join("");
+    return `<div style="color:#f2b4a8; margin:8px 0;"><strong>Selection checks:</strong><ul>${errors}${warnings}</ul></div>`;
+}
+
+function captureChoiceSelections() {
+    const selections = { languages: [], skills: [], proficiencies: [] };
+    document.querySelectorAll(".character-choice").forEach(select => {
+        const quantity = Number(select.dataset.quantity) || 1;
+        selections[select.dataset.kind].push(...Array.from(select.selectedOptions, option => option.value).slice(0, quantity));
+    });
+    characterDraft.choiceSelections = selections;
+    showSummary();
+}
+
+function renderChoiceControls(choiceRules) {
+    if (choiceRules.length === 0) return "";
+
+    const state = buildCharacterSelectionState();
+
+    const controls = choiceRules.map(({ kind, rule, library }, index) => {
+        const options = choiceKeys(rule, library);
+        const fixedValues = new Set(state.fixed[kind] || []);
+        const selected = new Set(characterDraft.choiceSelections?.[kind] || []);
+
+        const optionMarkup = options.map(key => {
+            const isFixed = fixedValues.has(key);
+            const isSelected = selected.has(key) && !isFixed;
+            return `<option value="${key}" ${isSelected ? "selected" : ""} ${isFixed ? "disabled" : ""}>${catalogName(library, key)}</option>`;
+        }).join("");
+
+        const label = kind.charAt(0).toUpperCase() + kind.slice(1);
+        const quantity = rule.quantity || 1;
+        const select = `<select aria-label="${label} choices" class="character-choice" data-kind="${kind}" data-choice-index="${index}" data-quantity="${quantity}" multiple size="${Math.min(Math.max(options.length, 2), 5)}" onchange="captureChoiceSelections()">${optionMarkup}</select>`;
+
+        if (kind === "languages") {
+            return `<details style="margin:8px 15px; color:#bfa88f;"><summary style="cursor:pointer; color:#e4a853;">Languages (${quantity})</summary>${select}</details>`;
+        }
+
+        return `<label style="display:block; margin-top:8px;">${label} (${quantity})<br>${select}</label>`;
+    }).join("");
+
+    return `<details style="margin:8px 15px; color:#bfa88f;"><summary style="cursor:pointer; color:#e4a853;">Choose Traits</summary>${controls}</details>`;
+}
+
+function renderStructuredTraits(summary) {
+    const sections = [];
+
+    if (summary.skills.length > 0 || summary.proficiencies.length > 0) {
+        const proficiencies = [...summary.skills, ...summary.proficiencies];
+        sections.push(`<strong>Skills &amp; Proficiencies:</strong> ${proficiencies.join(", ")}`);
+    }
+
+    const featureEntries = Object.entries(summary.features);
+    if (featureEntries.length > 0) {
+        sections.push(`<strong>Features:</strong><ul>${featureEntries.map(([name, description]) => `<li><strong>${name}:</strong> ${description}</li>`).join("")}</ul>`);
+    }
+
+    return sections.join("<br>");
+}
+
 function showSummary() {
     switchView('summary-view');
     const container = document.getElementById('summary-card');
@@ -262,6 +630,11 @@ function showSummary() {
     
     const bgData = gameData.backgrounds[characterDraft.background] || { mechanics: "", stats: {} };
     const classData = gameData.classes[characterDraft.class] || { mechanics: "", stats: {} };
+    const structuredCharacterSummary = compileCharacterSummary();
+    const structuredTraits = renderStructuredTraits(structuredCharacterSummary);
+    const choiceControls = renderChoiceControls(structuredCharacterSummary.choiceRules);
+    const validation = validateCharacterSelection(buildCharacterSelectionState());
+    const validationMessages = renderValidationMessages(validation);
 
     // OBJECT-BASED ABILITY SCORE TALLYING ENGINE
     let scores = { Strength: 0, Dexterity: 0, Constitution: 0, Intelligence: 0, Wisdom: 0, Charisma: 0 };
@@ -330,8 +703,14 @@ function showSummary() {
     }
 
     // 1. DYNAMIC TRAIT REMOVAL SYSTEM
-    // Start with the default cleaned body (removing original duplicate Ability Score texts)
-    let finalRaceBody = raceData.mechanics.replace(/<strong>Ability Score:<\/strong>.*?(<br>|$)/gi, "");
+    // Keep structured ability scores and languages out of the raw mechanics text.
+    const stripLanguageLine = mechanics =>
+        (mechanics || "").replace(/<strong>\s*Languages?:\s*<\/strong>.*?(<br>|$)/gi, "");
+    let finalRaceBody = stripLanguageLine(raceData.mechanics)
+        .replace(/<strong>Ability Score:<\/strong>.*?(<br>|$)/gi, "");
+    const finalSubraceBody = stripLanguageLine(subraceData.mechanics);
+    const finalBackgroundBody = stripLanguageLine(bgData.mechanics);
+    const finalClassBody = stripLanguageLine(classData.mechanics);
 
     // Check if the chosen subrace instructs us to remove baseline features
     if (subraceData.removes && Array.isArray(subraceData.removes)) {
@@ -355,18 +734,25 @@ function showSummary() {
                
             <!-- Merged Race Details Section -->
             <p style="margin: 12px 0;"><strong style="color:#e4a853; font-size:16px;"> Race Details:</strong><br>
+                    <span style="color:#bfa88f; font-size:14px; padding-left:15px; display:inline-block;"> <strong>Creature Type:</strong> ${structuredCharacterSummary.creatureType}</span><br>
                ${statsTextLine ? `<span style="color:#bfa88f; font-size:14px; padding-left:15px; display:inline-block;"> <strong>Ability Score Adjustments:</strong> ${statsTextLine}</span><br>` : ''}
+               ${validationMessages}
+               ${structuredTraits ? `<span style="color:#bfa88f; font-size:14px; padding-left:15px; display:inline-block;"> ${structuredTraits}</span><br>` : ''}
                <span style="color:#bfa88f; font-size:14px; padding-left:15px; display:inline-block;"> ${finalRaceBody}</span>
-               ${subraceData.mechanics ? `<br><span style="color:#bfa88f; font-size:14px; padding-left:15px; display:inline-block;"> ${subraceData.mechanics}</span>` : ''}
-            </p>
+               ${finalSubraceBody ? `<br><span style="color:#bfa88f; font-size:14px; padding-left:15px; display:inline-block;"> ${finalSubraceBody}</span>` : ''}
+               ${structuredCharacterSummary.languages.length ? `<br><span style="color:#bfa88f; font-size:14px; padding-left:15px; display:inline-block;"><strong>Languages:</strong> ${structuredCharacterSummary.languages.join(", ")}</span>` : ''}
+               </p>
+
+                ${choiceControls}
                
             <p style="margin: 12px 0;"><strong style="color:#e4a853; font-size:16px;"> Background:</strong> ${characterDraft.background}<br>
-               <span style="color:#bfa88f; font-size:14px; padding-left:15px; display:inline-block;"> ${bgData.mechanics}</span></p>
+                    <span style="color:#bfa88f; font-size:14px; padding-left:15px; display:inline-block;"> ${finalBackgroundBody}</span></p>
                
             <p style="margin: 12px 0 0 0;"><strong style="color:#e4a853; font-size:16px;"> Class:</strong> ${characterDraft.class}<br>
-               <span style="color:#bfa88f; font-size:14px; padding-left:15px; display:inline-block;"> ${classData.mechanics}</span></p>
+                    <span style="color:#bfa88f; font-size:14px; padding-left:15px; display:inline-block;"> ${finalClassBody}</span></p>
         </div>
     `;
+    updateDropdownOptionsInUI(buildCharacterSelectionState());
 }
 function generateRandomCharacter() {
     // 1. Pick a random Nation
@@ -417,7 +803,14 @@ function generateRandomCharacter() {
 }
 
 function restartBuilder() {
-    characterDraft = { nation: "", race: "", subrace: "", background: "", class: "" };
+    characterDraft = {
+        nation: "",
+        race: "",
+        subrace: "",
+        background: "",
+        class: "",
+        choiceSelections: { languages: [], skills: [], proficiencies: [] }
+    };
     currentStep = "nation";
     clearInspector();
     switchView('builder-view');
@@ -492,4 +885,5 @@ document.addEventListener('mouseout', function(e) {
 });
 
 // Kickoff Engine Initialization Frame
+normalizeGameData();
 renderNationOptions();
