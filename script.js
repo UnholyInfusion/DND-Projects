@@ -78,6 +78,8 @@ function switchView(viewId) {
 
     const box = document.getElementById('global-spell-box');
     if (box) box.classList.remove('visible');
+    const featBox = document.getElementById('global-feat-box');
+    if (featBox) featBox.classList.remove('visible');
 }
 
 // Side Panel Inspector Engine (MUST BE ABOVE RENDERING LOOPS)
@@ -421,9 +423,10 @@ function compileCharacterSummary() {
     const allSources = getCharacterSourceData();
     const raceSource = gameData.races[characterDraft.race] || {};
     const subraceSource = raceSource.subraces?.[characterDraft.subrace] || gameData.universalSubraces?.[characterDraft.subrace] || {};
+    const nationSource = gameData.nations[characterDraft.nation] || {};
     const backgroundSource = gameData.backgrounds[characterDraft.background] || {};
     const classSource = gameData.classes[characterDraft.class] || {};
-    const grantedSources = [raceSource, subraceSource, backgroundSource, classSource];
+    const grantedSources = [nationSource, raceSource, subraceSource, backgroundSource, classSource];
     const compiledRace = compileCharacterRace(characterDraft.race, characterDraft.subrace);
     const selected = characterDraft.choiceSelections || { languages: [], skills: [], proficiencies: [] };
     const languageKeys = [];
@@ -819,6 +822,7 @@ function restartBuilder() {
 
 // INITIALIZATION EXECUTION TRIGGER
 let spellHideTimeout;
+let featHideTimeout;
 
 document.addEventListener('mouseover', function(e) {
     if (e.target.classList.contains('spell-tooltip')) {
@@ -879,6 +883,56 @@ document.addEventListener('mouseout', function(e) {
 
         clearTimeout(spellHideTimeout);
         spellHideTimeout = setTimeout(() => {
+            box.classList.remove('visible');
+        }, 200);
+    }
+});
+
+document.addEventListener('mouseover', function(e) {
+    if (e.target.classList.contains('feat-tooltip')) {
+        clearTimeout(featHideTimeout);
+
+        const featName = e.target.getAttribute('data-feat');
+        const featDescription = featBook[featName];
+
+        if (featDescription) {
+            const box = document.getElementById('global-feat-box');
+            box.innerHTML = `<strong>${featName}:</strong><br><p style="margin:6px 0 0 0;">${featDescription}</p>`;
+            box.classList.add('visible');
+
+            const linkRect = e.target.getBoundingClientRect();
+            const boxWidth = box.offsetWidth || 320;
+            const boxHeight = box.offsetHeight || 150;
+            const padding = 15;
+            let leftPosition = linkRect.left + (linkRect.width / 2) - (boxWidth / 2);
+            let topPosition = linkRect.top - boxHeight - 10;
+
+            if (leftPosition < padding) leftPosition = padding;
+            if (leftPosition + boxWidth > window.innerWidth - padding) {
+                leftPosition = window.innerWidth - boxWidth - padding;
+            }
+            if (topPosition < padding) topPosition = linkRect.bottom + 10;
+            if (topPosition + boxHeight > window.innerHeight - padding) {
+                topPosition = window.innerHeight - boxHeight - padding;
+            }
+
+            box.style.left = leftPosition + 'px';
+            box.style.top = topPosition + 'px';
+        }
+    } else if (e.target.closest('#global-feat-box')) {
+        clearTimeout(featHideTimeout);
+    }
+});
+
+document.addEventListener('mouseout', function(e) {
+    const box = document.getElementById('global-feat-box');
+    const movingTo = e.relatedTarget;
+
+    if (e.target.classList.contains('feat-tooltip') || e.target.closest('#global-feat-box')) {
+        if (movingTo && (movingTo.classList.contains('feat-tooltip') || box.contains(movingTo))) return;
+
+        clearTimeout(featHideTimeout);
+        featHideTimeout = setTimeout(() => {
             box.classList.remove('visible');
         }, 200);
     }

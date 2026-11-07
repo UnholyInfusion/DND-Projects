@@ -129,8 +129,15 @@ body {
   cursor: help;
 }
 
+.feat-tooltip {
+  color: #e4a853;
+  font-weight: bold;
+  border-bottom: 1px dashed #b89244;
+  cursor: help;
+}
+
 /* Your custom expanded tooltip box layout */
-.spell-box {
+.spell-box{
   position: fixed; 
   z-index: 2000; 
   width: 320px; 
@@ -145,20 +152,40 @@ body {
   font-size: 0.9rem;
   line-height: 1.4;
   pointer-events: auto;
+  display: none;
+}
+.feat-box {
+  position: fixed; 
+  z-index: 2000; 
+  width: 320px; 
+  max-height: 250px; 
+  overflow-y: auto; 
+  background-color: #243b55; 
+  color: #f5eed7; 
+  padding: 14px;
+  border: 2px solid #c9a961;
+  border-radius: 4px;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.6);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  pointer-events: auto;
   display: none; 
 }
 
 /* Your custom visual scrollbar theme */
-.spell-box::-webkit-scrollbar {
+.spell-box::-webkit-scrollbar,
+.feat-box::-webkit-scrollbar {
   width: 5px;
 }
-.spell-box::-webkit-scrollbar-thumb {
+.spell-box::-webkit-scrollbar-thumb,
+.feat-box::-webkit-scrollbar-thumb {
   background: #b89244;
   border-radius: 3px;
 }
 
 /* Class to show the tooltip via JavaScript tracking */
-.spell-box.visible {
+.spell-box.visible,
+.feat-box.visible {
   display: block;
 }
 
