@@ -130,9 +130,11 @@ function inspectOption(step, name, description, mechanics) {
     `;
     
     // Core confirmation action button
-    document.getElementById('preview-actions').innerHTML = `
-        <button class="confirm-choice-btn" onclick="advanceBuilder('${step}', '${name}')">Confirm Selection ✓</button>
-    `;
+    const confirmButton = document.createElement('button');
+    confirmButton.className = "confirm-choice-btn";
+    confirmButton.textContent = "Confirm Selection ✓";
+    confirmButton.addEventListener('click', () => advanceBuilder(step, name));
+    document.getElementById('preview-actions').replaceChildren(confirmButton);
 }
 // Clear panel between choices
 function clearInspector() {
@@ -306,10 +308,11 @@ function renderClassOptions() {
 function buildCharacterSummary(chosenRaceKey, chosenSubraceKey) {
     const baseRace = gameData.races[chosenRaceKey] || {};
     const subrace = baseRace.subraces?.[chosenSubraceKey] || gameData.universalSubraces?.[chosenSubraceKey] || {};
+    const activeBaseRace = excludeRemovedProficiencies(baseRace, subrace.removesProficiencies);
 
     return {
         proficiencies: [
-            ...(baseRace.proficiencies || []),
+            ...(activeBaseRace.proficiencies || []),
             ...(subrace.proficiencies || [])
         ],
         languages: Array.from(new Set([
@@ -323,9 +326,20 @@ function buildCharacterSummary(chosenRaceKey, chosenSubraceKey) {
     };
 }
 
+function excludeRemovedProficiencies(source, removals) {
+    const removed = asArray(removals);
+    if (removed.length === 0) return source;
+
+    return {
+        ...source,
+        proficiencies: asArray(source.proficiencies).filter(value => !removed.includes(value))
+    };
+}
+
 function getCharacterSourceData() {
-    const race = gameData.races[characterDraft.race] || {};
-    const subrace = race.subraces?.[characterDraft.subrace] || gameData.universalSubraces?.[characterDraft.subrace] || {};
+    const baseRace = gameData.races[characterDraft.race] || {};
+    const subrace = baseRace.subraces?.[characterDraft.subrace] || gameData.universalSubraces?.[characterDraft.subrace] || {};
+    const race = excludeRemovedProficiencies(baseRace, subrace.removesProficiencies);
 
     return [
         race,
@@ -420,13 +434,7 @@ function compileCharacterRace(chosenRaceKey, chosenUniversalSubraceKey) {
 }
 
 function compileCharacterSummary() {
-    const allSources = getCharacterSourceData();
-    const raceSource = gameData.races[characterDraft.race] || {};
-    const subraceSource = raceSource.subraces?.[characterDraft.subrace] || gameData.universalSubraces?.[characterDraft.subrace] || {};
-    const nationSource = gameData.nations[characterDraft.nation] || {};
-    const backgroundSource = gameData.backgrounds[characterDraft.background] || {};
-    const classSource = gameData.classes[characterDraft.class] || {};
-    const grantedSources = [nationSource, raceSource, subraceSource, backgroundSource, classSource];
+    const grantedSources = getCharacterSourceData();
     const compiledRace = compileCharacterRace(characterDraft.race, characterDraft.subrace);
     const selected = characterDraft.choiceSelections || { languages: [], skills: [], proficiencies: [] };
     const languageKeys = [];
@@ -448,7 +456,7 @@ function compileCharacterSummary() {
         Object.assign(features, source.features || {});
     });
 
-    allSources.forEach(source => {
+    grantedSources.forEach(source => {
         [
             ["languages", source.choiceLanguages, LANGUAGE_LIBRARY],
             ["skills", source.choiceSkills, SKILL_LIBRARY],
