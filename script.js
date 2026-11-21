@@ -392,27 +392,68 @@ function skillName(key) {
         : catalogName(SKILL_LIBRARY, key);
 }
 
+//this is the player choice function (rule tells the player the options), (library is the menu)
 function choiceKeys(rule, library) {
-    if (!rule) return [];
-    if (rule.options === "all") return Object.keys(library);
-    if (Array.isArray(rule.options)) return rule.options;
+    //if no choice rule was provided, return an empty list of options and stop here.
+    if (!rule || !library) return [];
+    
+    const {options} = rule;
+    const allKeys = Object.keys(library);
+    
+    const applyExclusions = (keys) => {
+        if (Array.isArray(options?.exclude)) {
+            const excludeSet = new Set(options.exclude);
+            return keys.filter(key => !excludeSet.has(key));
+        }
+        return keys;
+    }
+    
+    //if all is the option it shows all options
+    if (options === "all") return applyExclusions(allKeys);
+    //if a list is provided return the list provided
+    if (Array.isArray(options)) return applyExclusions(options);
 
-    if (rule.options && typeof rule.options === "object") {
-        if (rule.options.category) {
-            const categoryKeys = Object.keys(library).filter(key =>
-                library[key]?.category === rule.options.category
-            );
-            return Array.isArray(rule.options.include)
-                ? categoryKeys.filter(key => rule.options.include.includes(key))
-                : categoryKeys;
+    //Narrows the array if given tool/skill/weapon as a options
+    if (options && typeof options === "object") {
+        //This block finds which entries in the library match the categories requested by the rule
+        //Turns requested category into a set
+        const categoryList = Array.isArray(options.categories)
+            ? options.categories
+            : options.category ? [options.category] : null;
+        //This tells the program wether further narrows is needed i.e. "include"
+        let filteredKeys = allKeys;
+        
+        //this is the single category version of the earlier filter
+        if (categoryList) {
+            const categorySet = new Set(categoryList);
+            filteredKeys = filteredKeys.filter(key => {
+                const itemCat = library[key]?.category || library[key]?.catagory;
+                return categorySet.has(itemCat);
+            });
         }
 
-        return Object.keys(library).filter(key =>
-            (rule.options.type && library[key]?.type === rule.options.type) ||
-            rule.options.include?.includes(key)
-        );
+        if (options.type) {
+            filteredKeys = filteredKeys.filter(key => library[key]?.type === options.type);
+        }
+
+        if (Array.isArray(options.include)) {
+            const includeSet = new Set(options.include);
+            const included = (!categoryList && !options.type)
+                ? allKeys.filter(key => includeSet.has(key))
+                : filteredKeys.filter(key => includeSet.has(key))
+            return applyExclusions(included);
+        }
+
+        if (categoryList || options.type) {
+            return applyExclusions(filteredKeys);
+        }
+
+        if (Array.isArray(options.exclude)) {
+            return applyExclusions(allKeys);
+        }
     }
 
+    //if nothing is found return empty list
     return [];
 }
 
@@ -465,6 +506,18 @@ function compileCharacterSummary() {
         ].forEach(([kind, rule, library]) => {
             if (rule) choiceRules.push({ kind, rule, library });
         });
+
+        const mechanics = typeof source.mechanics === "string" ? source.mechanics : "";
+        for (const [, featName] of mechanics.matchAll(/data-feat=["']([^"']+)["']/g)) {
+            const feat = featBook[featName];
+            if (feat && typeof feat === "object" && feat.choiceProficiencies) {
+                choiceRules.push({
+                    kind: "proficiencies",
+                    rule: feat.choiceProficiencies,
+                    library: PROFICIENCY_LIBRARY
+                });
+            }
+        }
     });
 
     languageKeys.push(...selected.languages);
@@ -901,7 +954,8 @@ document.addEventListener('mouseover', function(e) {
         clearTimeout(featHideTimeout);
 
         const featName = e.target.getAttribute('data-feat');
-        const featDescription = featBook[featName];
+        const feat = featBook[featName];
+        const featDescription = typeof feat === "string" ? feat : feat?.description;
 
         if (featDescription) {
             const box = document.getElementById('global-feat-box');
