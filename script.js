@@ -53,6 +53,8 @@ function normalizeDataEntry(entry, inferType = false) {
     entry.fixedSkills = asArray(entry.fixedSkills);
     entry.fixedProficiencies = asArray(entry.fixedProficiencies);
     entry.fixedToolProficiencies = asArray(entry.fixedToolProficiencies);
+    entry.fixedSavingThrows = asArray(entry.fixedSavingThrows);
+    entry.weaponCategories = asArray(entry.weaponCategories);
     entry.features ||= {};
     entry.subraces ||= {};
 
@@ -85,6 +87,9 @@ function switchView(viewId) {
 // Side Panel Inspector Engine (MUST BE ABOVE RENDERING LOOPS)
 function inspectOption(step, name, description, mechanics) {
     let sourceText = "Homebrew / Custom Setting"; // Default fallback text
+    let hitDieSection = "";
+    let savingThrowSection = "";
+    let weaponProficiencySection = "";
 
     try {
         if (step === "nation") {
@@ -106,6 +111,18 @@ function inspectOption(step, name, description, mechanics) {
             sourceText = gameData.backgrounds[name].source || "Players Hand Book";
         } else if (step === "class") {
             sourceText = gameData.classes[name].source || "Players Hand Book";
+            const hitDie = gameData.classes[name].hitDie;
+            if (hitDie) {
+                hitDieSection = `<strong>Hit Die:</strong> ${hitDie}<br><br>`;
+            }
+            const savingThrows = asArray(gameData.classes[name].fixedSavingThrows);
+            if (savingThrows.length > 0) {
+                savingThrowSection = `<strong>Saving Throw Proficiencies:</strong> ${savingThrows.join(", ")}<br><br>`;
+            }
+            const weaponCategories = asArray(gameData.classes[name].weaponCategories);
+            if (weaponCategories.length > 0) {
+                weaponProficiencySection = `<strong>Weapon Proficiencies:</strong> ${weaponCategories.join(" and ")} weapons<br><br>`;
+            }
         }
     } catch (e) {
         // Fallback protection if a custom property name typo happens later
@@ -126,7 +143,7 @@ function inspectOption(step, name, description, mechanics) {
     // Update Mechanics box
     document.getElementById('preview-features').innerHTML = `
         <strong> Features & Benefits:</strong>
-        <p style="margin-top: 8px; line-height: 1.4; font-size: 14px;">${mechanics}</p>
+        <p style="margin-top: 8px; line-height: 1.4; font-size: 14px;">${hitDieSection}${savingThrowSection}${weaponProficiencySection}${mechanics}</p>
     `;
     
     // Core confirmation action button
@@ -299,7 +316,7 @@ function renderClassOptions() {
         const item = gameData.classes[name];
         const div = document.createElement('div');
         div.className = "option-card";
-        div.innerHTML = `<strong>${name}</strong>`;
+        div.innerHTML = `<strong>${name}</strong>${item.hitDie ? `<br><span style="color:#bfa88f; font-size:12px;">Hit Die: ${item.hitDie}</span>` : ""}${item.fixedSavingThrows?.length ? `<br><span style="color:#bfa88f; font-size:12px;">Saving Throws: ${item.fixedSavingThrows.join(", ")}</span>` : ""}${item.weaponCategories?.length ? `<br><span style="color:#bfa88f; font-size:12px;">Weapons: ${item.weaponCategories.join(" and ")}</span>` : ""}`;
         div.onclick = () => inspectOption("class", name, item.desc, item.mechanics);
         grid.appendChild(div);
     });
@@ -392,6 +409,16 @@ function skillName(key) {
         : catalogName(SKILL_LIBRARY, key);
 }
 
+function weaponsInCategories(categories) {
+    const categorySet = new Set(asArray(categories).map(category => String(category).toLowerCase()));
+
+    return Object.keys(PROFICIENCY_LIBRARY).filter(key => {
+        const proficiency = PROFICIENCY_LIBRARY[key];
+        return proficiency.category === "Weapon" &&
+            categorySet.has(String(proficiency.weaponCategory || "").toLowerCase());
+    });
+}
+
 //this is the player choice function (rule tells the player the options), (library is the menu)
 function choiceKeys(rule, library) {
     //if no choice rule was provided, return an empty list of options and stop here.
@@ -481,16 +508,19 @@ function compileCharacterSummary() {
     const languageKeys = [];
     const skillKeys = [];
     const proficiencyKeys = [];
+    const savingThrowKeys = [];
     const features = {};
     const choiceRules = [];
 
     grantedSources.forEach(source => {
         languageKeys.push(...asArray(source.languages), ...asArray(source.fixedLanguages));
         skillKeys.push(...asArray(source.fixedSkills).map(skillKey));
+        savingThrowKeys.push(...asArray(source.fixedSavingThrows));
         const sourceProficiencies = [
             ...asArray(source.proficiencies),
             ...asArray(source.fixedProficiencies),
-            ...asArray(source.fixedToolProficiencies)
+            ...asArray(source.fixedToolProficiencies),
+            ...weaponsInCategories(source.weaponCategories)
         ];
         skillKeys.push(...sourceProficiencies.filter(isSkillProficiency).map(skillKey));
         proficiencyKeys.push(...sourceProficiencies.filter(value => !isSkillProficiency(value)));
@@ -498,11 +528,13 @@ function compileCharacterSummary() {
     });
 
     grantedSources.forEach(source => {
+        const isSelectedClass = source === gameData.classes[characterDraft.class];
+        const isSelectedBackground = source === gameData.backgrounds[characterDraft.background];
         [
-            ["languages", source.choiceLanguages, LANGUAGE_LIBRARY],
-            ["skills", source.choiceSkills, SKILL_LIBRARY],
-            ["proficiencies", source.choiceProficiencies, PROFICIENCY_LIBRARY],
-            ["proficiencies", source.choiceToolProficiencies, PROFICIENCY_LIBRARY]
+            ["languages", isSelectedClass || isSelectedBackground ? null : source.choiceLanguages, LANGUAGE_LIBRARY],
+            ["skills", isSelectedClass || isSelectedBackground ? null : source.choiceSkills, SKILL_LIBRARY],
+            ["proficiencies", isSelectedBackground ? null : source.choiceProficiencies, PROFICIENCY_LIBRARY],
+            ["proficiencies", isSelectedBackground ? null : source.choiceToolProficiencies, PROFICIENCY_LIBRARY]
         ].forEach(([kind, rule, library]) => {
             if (rule) choiceRules.push({ kind, rule, library });
         });
@@ -529,6 +561,7 @@ function compileCharacterSummary() {
         languages: Array.from(new Set(languageKeys)).map(key => catalogName(LANGUAGE_LIBRARY, key)),
         skills: Array.from(new Set(skillKeys)).map(skillName),
         proficiencies: Array.from(new Set(proficiencyKeys)).map(key => catalogName(PROFICIENCY_LIBRARY, key)),
+        savingThrows: Array.from(new Set(savingThrowKeys)),
         features,
         choiceRules,
         creatureType: compiledRace.creatureType
@@ -554,7 +587,8 @@ function buildCharacterSelectionState() {
         const sourceProficiencies = [
             ...asArray(source.proficiencies),
             ...asArray(source.fixedProficiencies),
-            ...asArray(source.fixedToolProficiencies)
+            ...asArray(source.fixedToolProficiencies),
+            ...weaponsInCategories(source.weaponCategories)
         ];
         state.fixed.skills.push(...sourceProficiencies.filter(isSkillProficiency).map(skillKey));
         state.fixed.proficiencies.push(...sourceProficiencies.filter(value => !isSkillProficiency(value)));
@@ -659,6 +693,47 @@ function renderChoiceControls(choiceRules) {
     return `<details style="margin:8px 15px; color:#bfa88f;"><summary style="cursor:pointer; color:#e4a853;">Choose Traits</summary>${controls}</details>`;
 }
 
+function renderSourceChoiceControls(source, sourceName) {
+    if (!source) return "";
+
+    const state = buildCharacterSelectionState();
+    const selected = characterDraft.choiceSelections || { languages: [], skills: [], proficiencies: [] };
+    const rules = [
+        ["languages", source.choiceLanguages, LANGUAGE_LIBRARY],
+        ["skills", source.choiceSkills, SKILL_LIBRARY],
+        ["proficiencies", source.choiceProficiencies, PROFICIENCY_LIBRARY],
+        ["proficiencies", source.choiceToolProficiencies, PROFICIENCY_LIBRARY]
+    ].filter(([, rule]) => Boolean(rule));
+
+    if (rules.length === 0) return "";
+
+    const controls = rules.map(([kind, rule, library], index) => {
+        const options = choiceKeys(rule, library);
+        if (options.length === 0) return "";
+
+        const fixedValues = new Set(state.fixed[kind] || []);
+        const selectedValues = new Set(selected[kind] || []);
+        const quantity = rule.quantity || 1;
+        const label = kind === "languages"
+            ? "Languages"
+            : kind.charAt(0).toUpperCase() + kind.slice(1);
+
+        const optionMarkup = options.map(key => {
+            const isFixed = fixedValues.has(key);
+            const isSelected = selectedValues.has(key) && !isFixed;
+            return `<option value="${key}" ${isSelected ? "selected" : ""} ${isFixed ? "disabled" : ""}>${catalogName(library, key)}</option>`;
+        }).join("");
+
+        return `<label style="display:block; margin-top:8px;">${label} (${quantity})<br>
+            <select aria-label="${sourceName} ${label} choices" class="character-choice" data-kind="${kind}" data-choice-index="${sourceName}-${index}" data-quantity="${quantity}" multiple size="${Math.min(Math.max(options.length, 2), 8)}" onchange="captureChoiceSelections()">${optionMarkup}</select>
+        </label>`;
+    }).join("");
+
+    return controls
+        ? `<details style="margin:8px 15px; color:#bfa88f;"><summary style="cursor:pointer; color:#e4a853;">Choose ${sourceName} Traits</summary>${controls}</details>`
+        : "";
+}
+
 function renderStructuredTraits(summary) {
     const sections = [];
 
@@ -694,6 +769,27 @@ function showSummary() {
     
     const bgData = gameData.backgrounds[characterDraft.background] || { mechanics: "", stats: {} };
     const classData = gameData.classes[characterDraft.class] || { mechanics: "", stats: {} };
+    const classWeaponProficiencyKeys = Array.from(new Set([
+        ...asArray(classData.fixedProficiencies)
+            .map(skillKey)
+            .filter(key => PROFICIENCY_LIBRARY[key]?.category === "Weapon"),
+        ...weaponsInCategories(classData.weaponCategories)
+    ]));
+    const classWeaponProficiencies = classWeaponProficiencyKeys
+        .map(key => catalogName(PROFICIENCY_LIBRARY, key))
+        .join(", ");
+    const classSkillOptions = choiceKeys(classData.choiceSkills, SKILL_LIBRARY);
+    const selectedClassSkills = new Set(characterDraft.choiceSelections?.skills || []);
+    const classSkillQuantity = classData.choiceSkills?.quantity || 0;
+    const classSkillControl = classSkillOptions.length > 0
+        ? `<details style="margin:8px 15px; color:#bfa88f;">
+                <summary style="cursor:pointer; color:#e4a853;">Choose ${characterDraft.class} Skills (${classSkillQuantity})</summary>
+                <select aria-label="${characterDraft.class} skill choices" class="character-choice" data-kind="skills" data-choice-index="class-skills" data-quantity="${classSkillQuantity}" multiple size="${Math.min(Math.max(classSkillOptions.length, 2), 8)}" onchange="captureChoiceSelections()">
+                    ${classSkillOptions.map(key => `<option value="${key}" ${selectedClassSkills.has(key) ? "selected" : ""}>${catalogName(SKILL_LIBRARY, key)}</option>`).join("")}
+                </select>
+           </details>`
+        : "";
+    const backgroundChoiceControl = renderSourceChoiceControls(bgData, characterDraft.background);
     const structuredCharacterSummary = compileCharacterSummary();
     const structuredTraits = renderStructuredTraits(structuredCharacterSummary);
     const choiceControls = renderChoiceControls(structuredCharacterSummary.choiceRules);
@@ -810,9 +906,14 @@ function showSummary() {
                 ${choiceControls}
                
             <p style="margin: 12px 0;"><strong style="color:#e4a853; font-size:16px;"> Background:</strong> ${characterDraft.background}<br>
-                    <span style="color:#bfa88f; font-size:14px; padding-left:15px; display:inline-block;"> ${finalBackgroundBody}</span></p>
+                    <span style="color:#bfa88f; font-size:14px; padding-left:15px; display:inline-block;"> ${finalBackgroundBody}</span>
+                    ${backgroundChoiceControl}</p>
                
             <p style="margin: 12px 0 0 0;"><strong style="color:#e4a853; font-size:16px;"> Class:</strong> ${characterDraft.class}<br>
+                    ${classData.hitDie ? `<span style="color:#bfa88f; font-size:14px; padding-left:15px; display:inline-block;"><strong>Hit Die:</strong> ${classData.hitDie}</span><br>` : ''}
+                    ${classData.fixedSavingThrows?.length ? `<span style="color:#bfa88f; font-size:14px; padding-left:15px; display:inline-block;"><strong>Saving Throw Proficiencies:</strong> ${classData.fixedSavingThrows.join(", ")}</span><br>` : ''}
+                    ${classWeaponProficiencies ? `<span style="color:#bfa88f; font-size:14px; padding-left:15px; display:inline-block;"><strong>Weapon Proficiencies:</strong> ${classWeaponProficiencies}</span><br>` : ''}
+                    ${classSkillControl}
                     <span style="color:#bfa88f; font-size:14px; padding-left:15px; display:inline-block;"> ${finalClassBody}</span></p>
         </div>
     `;
